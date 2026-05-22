@@ -3,5 +3,9 @@
   "installCommand": "cd mobile && npm install",
   "buildCommand": "cd mobile && npm run build:web && cd .. && rm -rf web/app && mkdir -p web/app && cp -R mobile/dist/. web/app/",
   "outputDirectory": "web",
-  "framework": null
+  "framework": null,
+  "functions": {
+    "api/index.py": { "includeFiles": "backend/src/**" }
+  },
+  "rewrites": [{ "source": "/api/(.*)", "destination": "/api/index" }]
 }

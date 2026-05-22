@@ -1,12 +1,17 @@
 /** 백엔드 HTTP 클라이언트.
  *
- * iOS 시뮬레이터는 localhost가 호스트로 연결되지만, 실기기/안드로이드
- * 에뮬레이터에서는 머신 IP가 필요하다. EXPO_PUBLIC_API_BASE로 덮어쓴다.
+ * 기본값:
+ *  - 웹(Vercel): 같은 출처의 "/api" (서버리스 함수, CORS 불필요)
+ *  - 네이티브(개발): "http://127.0.0.1:8000" (iOS 시뮬레이터는 localhost=호스트)
+ * EXPO_PUBLIC_API_BASE 가 있으면 항상 우선한다.
  *   예) EXPO_PUBLIC_API_BASE=http://192.168.0.10:8000
  */
 
+import { Platform } from "react-native";
+
 export const API_BASE =
-  process.env.EXPO_PUBLIC_API_BASE ?? "http://127.0.0.1:8000";
+  process.env.EXPO_PUBLIC_API_BASE ??
+  (Platform.OS === "web" ? "/api" : "http://127.0.0.1:8000");
 
 export class ApiError extends Error {
   constructor(

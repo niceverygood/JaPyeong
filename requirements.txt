@@ -1,0 +1,3 @@
+fastapi>=0.111
+pydantic>=2.7
+sxtwl>=2.0
