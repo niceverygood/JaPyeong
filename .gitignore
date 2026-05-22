@@ -55,3 +55,6 @@ backend/data/classics/*.json
 !backend/data/classics/.gitkeep
 *.dump
 *.sqlite
+
+# ---- Generated web app build (landing is committed at web/index.html) ----
+web/app/

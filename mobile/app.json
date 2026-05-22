@@ -26,6 +26,9 @@
       "bundler": "metro",
       "output": "single",
       "backgroundColor": "#0F1419"
+    },
+    "experiments": {
+      "baseUrl": "/app"
     }
   }
 }
