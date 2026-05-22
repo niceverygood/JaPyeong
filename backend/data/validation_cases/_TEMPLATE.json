@@ -1,0 +1,50 @@
+{
+  "id": "case_000_template",
+  "source": "출처 표기 필수 (예: 박재완 명리요강 p.123 / 자문위원 OOO 검증)",
+  "birth": {
+    "name": "예시",
+    "gender": "M",
+    "calendar": "solar",
+    "year": 1985,
+    "month": 6,
+    "day": 23,
+    "hour": 14,
+    "minute": 30,
+    "is_leap_month": false,
+    "birth_place": "Seoul",
+    "longitude": 126.9784,
+    "latitude": 37.5665,
+    "timezone": "Asia/Seoul"
+  },
+  "expected": {
+    "pillars": {
+      "year": { "gan": "乙", "ji": "丑" },
+      "month": { "gan": "壬", "ji": "午" },
+      "day": { "gan": "丙", "ji": "戌" },
+      "hour": { "gan": "乙", "ji": "未" }
+    },
+    "day_master": "丙",
+    "day_master_strength": "신약",
+    "geokguk": "식신생재격",
+    "yongsin": "金",
+    "huishin": "土",
+    "gisin": "火",
+    "gushin": "木",
+    "daewoon_start_age": 7,
+    "daewoon_direction": "forward",
+    "ten_gods_count": {
+      "bi_gyeon": 1,
+      "gyeop_jae": 0,
+      "sik_sin": 2,
+      "sang_gwan": 1,
+      "jeong_jae": 1,
+      "pyeon_jae": 0,
+      "jeong_gwan": 1,
+      "pyeon_gwan": 0,
+      "jeong_in": 0,
+      "pyeon_in": 0
+    }
+  },
+  "tags": ["8자추출", "격국", "용신"],
+  "notes": "⚠️ 이 파일은 포맷 예시(템플릿)일 뿐, expected 값은 검증된 실제 사주가 아님. 특히 day=丙戌은 일간 丙 기준으로 만든 설명용 값으로, 1985-06-23의 실제 일주(癸巳, sxtwl 검증)와 다름. 절대 그대로 복사해 실제 케이스로 등록하지 말 것. expected의 모든 필드는 선택이며 검증하려는 항목만 채운다. 파일명이 _로 시작하면 하네스가 건너뜀."
+}

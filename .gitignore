@@ -1,0 +1,57 @@
+# ---- Secrets / env ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---- Python / backend ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.python-version
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+dist/
+build/
+
+# ---- Node / mobile ----
+node_modules/
+.expo/
+.expo-shared/
+dist/
+web-build/
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# ---- Native build ----
+ios/Pods/
+ios/build/
+android/.gradle/
+android/app/build/
+*.keystore
+!debug.keystore
+
+# ---- Loose working file (design reference is kept in assets/design/) ----
+/_ - Mobile Screens.html
+
+# ---- OS / editor ----
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# ---- Data (do not commit PII / large dumps) ----
+backend/data/classics/*.txt
+backend/data/classics/*.json
+!backend/data/classics/.gitkeep
+*.dump
+*.sqlite

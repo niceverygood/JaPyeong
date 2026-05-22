@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "자평",
+    "slug": "japyeong",
+    "scheme": "japyeong",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0F1419",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0F1419"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.japyeong.app"
+    },
+    "android": {
+      "package": "com.japyeong.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F1419"
+      }
+    },
+    "plugins": []
+  }
+}
