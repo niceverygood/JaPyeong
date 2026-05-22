@@ -21,6 +21,11 @@
         "backgroundColor": "#0F1419"
       }
     },
-    "plugins": []
+    "plugins": [],
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "backgroundColor": "#0F1419"
+    }
   }
 }
