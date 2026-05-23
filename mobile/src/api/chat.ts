@@ -10,10 +10,17 @@ export interface Citation {
   volume?: string | null;
 }
 
+export type Confidence = "high" | "medium" | "low";
+
 export interface ChatResponse {
   answer: string;
   basis: string;
+  perspective: string;
+  timing: string;
+  cautions: string[];
   citations: Citation[];
+  contested: string[]; // 학파별 견해 차이
+  confidence: Confidence;
   follow_up_suggestions: string[];
   flags: string[];
   model: string;

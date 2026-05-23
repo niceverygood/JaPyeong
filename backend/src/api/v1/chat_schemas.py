@@ -1,4 +1,4 @@
-"""/v1/chat API 요청·응답 DTO."""
+"""/v1/chat API 요청·응답 DTO (v2: 학설 다양성 반영)."""
 
 from pydantic import BaseModel, Field
 
@@ -16,9 +16,16 @@ class CitationDTO(BaseModel):
 
 
 class ChatResponse(BaseModel):
+    """v2: perspective/timing/cautions/contested/confidence 추가."""
+
     answer: str
     basis: str
-    citations: list[CitationDTO]
-    follow_up_suggestions: list[str]
-    flags: list[str]  # 가드레일 플래그 (medical_legal / absolute_phrasing / crisis_*)
+    perspective: str = ""
+    timing: str = ""
+    cautions: list[str] = []
+    citations: list[CitationDTO] = []
+    contested: list[str] = []  # 학파별 견해 차이
+    confidence: str = "medium"  # high | medium | low
+    follow_up_suggestions: list[str] = []
+    flags: list[str] = []  # 가드레일 플래그
     model: str

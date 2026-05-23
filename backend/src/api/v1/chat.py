@@ -20,8 +20,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
         return ChatResponse(
             answer=pre.answer,
             basis="안전 안내",
-            citations=[],
-            follow_up_suggestions=[],
+            confidence="high",
             flags=list(pre.flags),
             model="(guardrail)",
         )
@@ -50,7 +49,12 @@ async def chat(req: ChatRequest) -> ChatResponse:
     return ChatResponse(
         answer=post.answer,
         basis=result.basis,
+        perspective=result.perspective,
+        timing=result.timing,
+        cautions=list(result.cautions),
         citations=[CitationDTO(source=c.source, volume=c.volume) for c in result.citations],
+        contested=list(result.contested),
+        confidence=result.confidence,
         follow_up_suggestions=list(result.follow_up_suggestions),
         flags=list(post.flags),
         model=result.model,

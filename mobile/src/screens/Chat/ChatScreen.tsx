@@ -91,9 +91,88 @@ export function ChatScreen() {
               {/* ai */}
               {t.response ? (
                 <Card>
+                  {/* 신뢰도 배지 */}
+                  <View className="mb-2 flex-row items-center justify-between">
+                    <Text className="font-sans text-xs text-ink-muted">AI 자문</Text>
+                    <View
+                      className={`rounded-md px-2 py-0.5 ${
+                        t.response.confidence === "high"
+                          ? "border border-ohaeng-mok"
+                          : t.response.confidence === "low"
+                            ? "border border-accent-brown"
+                            : "border border-line"
+                      }`}
+                    >
+                      <Text className="font-sans text-[10px] tracking-wider text-ink-secondary">
+                        신뢰도 {t.response.confidence}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* 본문 */}
                   <Text className="font-sans text-base leading-7 text-ink">
                     {t.response.answer}
                   </Text>
+
+                  {/* perspective */}
+                  {t.response.perspective ? (
+                    <View className="mt-3 rounded-lg border border-line bg-bg-card p-3">
+                      <Text className="mb-1 font-sans text-[10px] tracking-widest text-gold-light">
+                        관점
+                      </Text>
+                      <Text className="font-sans text-sm leading-6 text-ink-secondary">
+                        {t.response.perspective}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {/* timing */}
+                  {t.response.timing ? (
+                    <View className="mt-2 rounded-lg border border-line bg-bg-card p-3">
+                      <Text className="mb-1 font-sans text-[10px] tracking-widest text-gold-light">
+                        시기
+                      </Text>
+                      <Text className="font-sans text-sm leading-6 text-ink-secondary">
+                        {t.response.timing}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {/* cautions */}
+                  {t.response.cautions.length > 0 && (
+                    <View className="mt-2 rounded-lg border border-accent-brown bg-bg-card p-3">
+                      <Text className="mb-1 font-sans text-[10px] tracking-widest text-accent-clay">
+                        주의
+                      </Text>
+                      {t.response.cautions.map((c, j) => (
+                        <Text
+                          key={j}
+                          className="font-sans text-sm leading-6 text-ink-secondary"
+                        >
+                          • {c}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* contested — 학파별 견해 차이 */}
+                  {t.response.contested.length > 0 && (
+                    <View className="mt-2 rounded-lg border border-line bg-bg-card p-3">
+                      <Text className="mb-1 font-sans text-[10px] tracking-widest text-ink-muted">
+                        학파별 견해
+                      </Text>
+                      {t.response.contested.map((c, j) => (
+                        <Text
+                          key={j}
+                          className="font-sans text-sm leading-6 text-ink-secondary"
+                        >
+                          ◦ {c}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* 근거 */}
                   {t.response.basis ? (
                     <View className="mt-3 self-start rounded-md border border-line bg-bg-card px-2 py-1">
                       <Text className="font-serif text-xs text-gold-light">
@@ -101,6 +180,8 @@ export function ChatScreen() {
                       </Text>
                     </View>
                   ) : null}
+
+                  {/* 인용 칩 */}
                   {t.response.citations.length > 0 && (
                     <View className="mt-2 flex-row flex-wrap gap-1.5">
                       {t.response.citations.map((c, j) => (
@@ -116,6 +197,7 @@ export function ChatScreen() {
                       ))}
                     </View>
                   )}
+
                   {t.response.follow_up_suggestions.length > 0 && (
                     <View className="mt-3 gap-1.5">
                       <Text className="font-sans text-xs text-ink-muted">이어서 물어볼 만한 것</Text>

@@ -1,8 +1,8 @@
-"""Anthropic Claude 자문 호출.
+"""Anthropic Claude 자문 호출 (v2 — 풍부한 응답 스키마).
 
 3층 아키텍처(CLAUDE.md):
   Layer 1: 룰베이스 엔진 — 사주 JSON (saju_service.analyze_natal)
-  Layer 2: LLM — 이 모듈
+  Layer 2: LLM — 이 모듈 (학파 다양성·고전 인용·잠정 라벨 반영)
   Layer 3: 가드레일 — guardrails.filter_answer
 
 ANTHROPIC_API_KEY 미설정 시 호출은 RuntimeError를 던진다(API 핸들러가 503으로 변환).
@@ -19,7 +19,7 @@ import anthropic
 from src.ai.prompts import SYSTEM_PROMPT, build_user_message
 
 DEFAULT_MODEL = os.environ.get("ANTHROPIC_MODEL_STANDARD", "claude-sonnet-4-5")
-MAX_TOKENS = 1024
+MAX_TOKENS = 1500  # v2: perspective/contested/cautions 추가로 약간 증가
 TEMPERATURE = 0.5
 
 
@@ -33,9 +33,17 @@ class Citation:
 class ConsultationResult:
     answer: str
     basis: str
+    perspective: str  # v2: 사주에서 관찰되는 큰 흐름·관점
+    timing: str  # v2: 시기 코멘트 (없으면 빈 문자열)
+    cautions: tuple[str, ...]  # v2: 주의 신호 0~3개
     citations: tuple[Citation, ...]
+    contested: tuple[str, ...]  # v2: 학파별 견해 차이 0~3개
+    confidence: str  # v2: "high" | "medium" | "low"
     follow_up_suggestions: tuple[str, ...]
     model: str
+
+
+_VALID_CONFIDENCE = {"high", "medium", "low"}
 
 
 def _client() -> anthropic.Anthropic:
@@ -66,10 +74,25 @@ def consult(natal: dict, question: str, model: str | None = None) -> Consultatio
         for c in (data.get("citations") or [])
         if isinstance(c, dict) and c.get("source")
     )
+    cautions = tuple(
+        str(s).strip() for s in (data.get("cautions") or []) if str(s).strip()
+    )[:3]
+    contested = tuple(
+        str(s).strip() for s in (data.get("contested") or []) if str(s).strip()
+    )[:3]
+    confidence = str(data.get("confidence", "medium")).strip().lower()
+    if confidence not in _VALID_CONFIDENCE:
+        confidence = "medium"
+
     return ConsultationResult(
         answer=str(data.get("answer", "")).strip(),
         basis=str(data.get("basis", "")).strip(),
+        perspective=str(data.get("perspective", "")).strip(),
+        timing=str(data.get("timing", "")).strip(),
+        cautions=cautions,
         citations=citations,
+        contested=contested,
+        confidence=confidence,
         follow_up_suggestions=tuple(
             str(s).strip() for s in (data.get("follow_up_suggestions") or []) if str(s).strip()
         )[:3],
