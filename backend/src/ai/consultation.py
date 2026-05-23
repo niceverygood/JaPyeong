@@ -19,8 +19,9 @@ import anthropic
 from src.ai.prompts import SYSTEM_PROMPT, build_user_message
 
 DEFAULT_MODEL = os.environ.get("ANTHROPIC_MODEL_STANDARD", "claude-sonnet-4-5")
-MAX_TOKENS = 1500  # v2: perspective/contested/cautions 추가로 약간 증가
+MAX_TOKENS = 2200  # v2: contested/cautions 다 채우면 길어지므로 여유. 잘림 = JSON 파싱 실패 502
 TEMPERATURE = 0.5
+RETRY_ON_PARSE_FAIL = 1  # Claude가 가끔 JSON을 끊기게 생성 → 1회 자동 재시도
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,20 +55,36 @@ def _client() -> anthropic.Anthropic:
 
 
 def consult(natal: dict, question: str, model: str | None = None) -> ConsultationResult:
-    """룰베이스 사주 JSON + 질문 → Claude 자문(JSON) 호출."""
+    """룰베이스 사주 JSON + 질문 → Claude 자문(JSON) 호출.
+
+    Claude가 가끔 max_tokens 한계로 JSON을 끊기게 생성 → 파싱 실패 시 1회 재시도.
+    """
     natal_json = json.dumps(natal, ensure_ascii=False, default=str)
     msg = build_user_message(natal_json, question)
     mdl = model or DEFAULT_MODEL
+    client = _client()
 
-    resp = _client().messages.create(
-        model=mdl,
-        max_tokens=MAX_TOKENS,
-        temperature=TEMPERATURE,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": msg}],
-    )
-    text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
-    data = _parse_json_lenient(text)
+    data: dict | None = None
+    last_err: Exception | None = None
+    for attempt in range(RETRY_ON_PARSE_FAIL + 1):
+        resp = client.messages.create(
+            model=mdl,
+            max_tokens=MAX_TOKENS,
+            temperature=TEMPERATURE,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": msg}],
+        )
+        text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+        try:
+            data = _parse_json_lenient(text)
+            break
+        except (json.JSONDecodeError, ValueError) as e:
+            last_err = e  # 파싱 실패 → 재시도
+            continue
+    if data is None:
+        raise RuntimeError(
+            f"Claude JSON 파싱 실패({RETRY_ON_PARSE_FAIL + 1}회): {last_err}"
+        )
 
     citations = tuple(
         Citation(source=c.get("source", "").strip(), volume=(c.get("volume") or None))
