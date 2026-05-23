@@ -15,7 +15,7 @@ import re  # noqa: E402
 import time  # noqa: E402
 
 import httpx  # noqa: E402
-from fastapi import FastAPI  # noqa: E402
+from fastapi import FastAPI, Header, HTTPException  # noqa: E402
 from pydantic import BaseModel, EmailStr, Field  # noqa: E402
 
 from src.api.v1 import chat, saju  # noqa: E402
@@ -38,6 +38,7 @@ async def feature_status() -> dict:
     return {
         "saju_engine": True,  # 항상 활성 (룰베이스)
         "ai_chat": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "openrouter": bool(os.environ.get("OPENROUTER_API_KEY")),
         "preorder_webhook": bool(os.environ.get("PREORDER_WEBHOOK_URL")),
         "database": bool(os.environ.get("DATABASE_URL")),
         "payment_portone": bool(
@@ -47,9 +48,43 @@ async def feature_status() -> dict:
         "notes": [
             "saju_engine: 룰베이스 + 잠정 strength/geokguk/yongsin",
             "ai_chat: ANTHROPIC_API_KEY 설정 시 활성",
+            "openrouter: OPENROUTER_API_KEY 설정 시 /api/_admin/cross-check 가용",
             "database: DATABASE_URL 설정 + alembic 마이그레이션 후 활성",
         ],
     }
+
+
+# ── 관리자 전용 다중 LLM 교차검증 ────────────────────────────
+@app.post("/api/_admin/cross-check")
+async def admin_cross_check(
+    n: int = 3,
+    authorization: str = Header(default=""),
+) -> dict:
+    """결정론적 합성 사주 n건 × 다계열 LLM 교차검증.
+
+    인증: 헤더 `Authorization: Bearer <OPENROUTER_API_KEY>` 가 env 값과 일치.
+    cost·time 한계로 n은 [1, 5] 클램프 (Vercel 60s 타임아웃 보호).
+
+    ⚠ LLM 합의는 자문위원 검증을 대체하지 않는다. 통설 영역 보조 신호.
+    """
+    key = os.environ.get("OPENROUTER_API_KEY", "")
+    if not key:
+        raise HTTPException(503, "OPENROUTER_API_KEY 미설정")
+    expected = f"Bearer {key}"
+    if authorization != expected:
+        raise HTTPException(401, "관리자 인증 실패")
+
+    # lazy import — cold start 시 httpx 외 추가 import 없음
+    from src.services.llm_crosscheck import (
+        generate_seeded_cases,
+        report_to_dict,
+        run_crosscheck,
+    )
+
+    n = max(1, min(n, 5))
+    cases = generate_seeded_cases(n)
+    report = await run_crosscheck(cases, api_key=key)
+    return report_to_dict(report)
 
 
 # ── 사전예약 수집 ──────────────────────────────────────────────
