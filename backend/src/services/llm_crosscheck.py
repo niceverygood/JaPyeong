@@ -31,7 +31,7 @@ from src.engine.schema import BirthInfo
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # 다양성·비용 균형 — 4개 모델 (Anthropic/OpenAI/Google/Deepseek 계열).
-# OpenRouter는 식별자를 종종 변경. 404 발생 시 환경변수 CROSSCHECK_MODELS(쉼표구분)로 오버라이드 가능.
+# OpenRouter 식별자는 변경되기도 함. env CROSSCHECK_MODELS(쉼표구분)로 오버라이드 가능.
 DEFAULT_MODELS: tuple[str, ...] = (
     "anthropic/claude-sonnet-4",
     "openai/gpt-4o-mini",
