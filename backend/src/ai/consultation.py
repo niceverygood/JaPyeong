@@ -66,7 +66,7 @@ def consult(natal: dict, question: str, model: str | None = None) -> Consultatio
 
     data: dict | None = None
     last_err: Exception | None = None
-    for attempt in range(RETRY_ON_PARSE_FAIL + 1):
+    for _ in range(RETRY_ON_PARSE_FAIL + 1):
         resp = client.messages.create(
             model=mdl,
             max_tokens=MAX_TOKENS,
