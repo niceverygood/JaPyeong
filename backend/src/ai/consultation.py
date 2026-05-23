@@ -1,0 +1,92 @@
+"""Anthropic Claude 자문 호출.
+
+3층 아키텍처(CLAUDE.md):
+  Layer 1: 룰베이스 엔진 — 사주 JSON (saju_service.analyze_natal)
+  Layer 2: LLM — 이 모듈
+  Layer 3: 가드레일 — guardrails.filter_answer
+
+ANTHROPIC_API_KEY 미설정 시 호출은 RuntimeError를 던진다(API 핸들러가 503으로 변환).
+"""
+
+from __future__ import annotations
+
+import json
+import os
+from dataclasses import dataclass
+
+import anthropic
+
+from src.ai.prompts import SYSTEM_PROMPT, build_user_message
+
+DEFAULT_MODEL = os.environ.get("ANTHROPIC_MODEL_STANDARD", "claude-sonnet-4-5")
+MAX_TOKENS = 1024
+TEMPERATURE = 0.5
+
+
+@dataclass(frozen=True, slots=True)
+class Citation:
+    source: str
+    volume: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ConsultationResult:
+    answer: str
+    basis: str
+    citations: tuple[Citation, ...]
+    follow_up_suggestions: tuple[str, ...]
+    model: str
+
+
+def _client() -> anthropic.Anthropic:
+    key = os.environ.get("ANTHROPIC_API_KEY")
+    if not key:
+        raise RuntimeError("ANTHROPIC_API_KEY 미설정 — Vercel 환경변수에 키를 추가하세요.")
+    return anthropic.Anthropic(api_key=key)
+
+
+def consult(natal: dict, question: str, model: str | None = None) -> ConsultationResult:
+    """룰베이스 사주 JSON + 질문 → Claude 자문(JSON) 호출."""
+    natal_json = json.dumps(natal, ensure_ascii=False, default=str)
+    msg = build_user_message(natal_json, question)
+    mdl = model or DEFAULT_MODEL
+
+    resp = _client().messages.create(
+        model=mdl,
+        max_tokens=MAX_TOKENS,
+        temperature=TEMPERATURE,
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": msg}],
+    )
+    text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+    data = _parse_json_lenient(text)
+
+    citations = tuple(
+        Citation(source=c.get("source", "").strip(), volume=(c.get("volume") or None))
+        for c in (data.get("citations") or [])
+        if isinstance(c, dict) and c.get("source")
+    )
+    return ConsultationResult(
+        answer=str(data.get("answer", "")).strip(),
+        basis=str(data.get("basis", "")).strip(),
+        citations=citations,
+        follow_up_suggestions=tuple(
+            str(s).strip() for s in (data.get("follow_up_suggestions") or []) if str(s).strip()
+        )[:3],
+        model=mdl,
+    )
+
+
+def _parse_json_lenient(text: str) -> dict:
+    """JSON 코드펜스/잡설을 관용적으로 떼고 파싱."""
+    t = text.strip()
+    if t.startswith("```"):
+        # ```json ... ``` or ``` ... ```
+        t = t.split("\n", 1)[1] if "\n" in t else t
+        if t.endswith("```"):
+            t = t[: -3]
+    # 가장 바깥 { ... } 슬라이스
+    s, e = t.find("{"), t.rfind("}")
+    if s != -1 and e != -1 and e > s:
+        t = t[s : e + 1]
+    return json.loads(t)

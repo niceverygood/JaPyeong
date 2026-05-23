@@ -1,3 +1,5 @@
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -6,8 +8,12 @@ import type { TenGodsCount } from "@/api/types";
 import { DaewoonList } from "@/components/domain/DaewoonList";
 import { OhaengChart } from "@/components/domain/OhaengChart";
 import { SajuGrid } from "@/components/domain/SajuGrid";
+import { Button } from "@/components/primitives/Button";
 import { Card } from "@/components/primitives/Card";
+import type { RootStackParamList } from "@/navigation/types";
 import { useBirthStore } from "@/stores/birthStore";
+
+type Nav = NativeStackNavigationProp<RootStackParamList, "Saju">;
 
 const TEN_GOD_LABEL: Record<keyof TenGodsCount, string> = {
   bi_gyeon: "비견",
@@ -28,6 +34,7 @@ function SectionTitle({ children }: { children: string }) {
 
 export function SajuScreen() {
   const birth = useBirthStore((s) => s.birth);
+  const navigation = useNavigation<Nav>();
   const { data, isLoading, error } = useAnalyzeSaju(birth);
 
   if (!birth) {
@@ -117,6 +124,13 @@ export function SajuScreen() {
                 <SectionTitle>대운 (大運)</SectionTitle>
                 <DaewoonList daewoon={data.daewoon} />
               </Card>
+
+              <View className="mt-2">
+                <Button
+                  label="AI 자문 시작하기 →"
+                  onPress={() => navigation.navigate("Chat")}
+                />
+              </View>
             </>
           )}
         </View>
