@@ -1,4 +1,8 @@
-"""/v1/saju API 응답 DTO (엔진 dataclass → 직렬화용 Pydantic)."""
+"""/v1/saju API 응답 DTO (엔진 dataclass → 직렬화용 Pydantic).
+
+⚠ strength/geokguk/yongsin은 자문위원 미확정 상태(provisional).
+각 응답 객체에 confidence 필드를 노출해 클라이언트가 명확히 표기할 수 있게 한다.
+"""
 
 from datetime import date
 
@@ -38,6 +42,34 @@ class DaewoonResponse(BaseModel):
     periods: list[DaewoonPeriodResponse]
 
 
+class StrengthResponse(BaseModel):
+    label: str  # 신강 / 신약 / 중화
+    ally_ratio: float
+    deuk_ryeong: bool
+    deuk_ji: bool
+    notes: list[str]
+    confidence: str  # "provisional"
+
+
+class GeokgukResponse(BaseModel):
+    name: str  # 정관격 / 편관격 / ...
+    ten_god: str  # 한글 이름 (비견·정관 등)
+    based_on: str  # transparent / primary
+    based_gan: str  # 격을 만든 천간
+    confidence: str
+
+
+class YongsinResponse(BaseModel):
+    yongsin: str  # 오행 (木火土金水)
+    huishin: str
+    gisin: str
+    gushin: str
+    method: str  # eokbu / johu / hybrid
+    based_on_strength: str
+    notes: list[str]
+    confidence: str
+
+
 class NatalResponse(BaseModel):
     """원국 분석 결과."""
 
@@ -48,6 +80,9 @@ class NatalResponse(BaseModel):
     five_elements: FiveElementsResponse
     relations: list[RelationResponse]
     daewoon: DaewoonResponse
+    strength: StrengthResponse
+    geokguk: GeokgukResponse
+    yongsin: YongsinResponse
 
 
 class LuckResponse(BaseModel):

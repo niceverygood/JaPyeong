@@ -75,6 +75,34 @@ export interface Daewoon {
   periods: DaewoonPeriod[];
 }
 
+export interface Strength {
+  label: "신강" | "신약" | "중화";
+  ally_ratio: number;
+  deuk_ryeong: boolean;
+  deuk_ji: boolean;
+  notes: string[];
+  confidence: string; // "provisional"
+}
+
+export interface Geokguk {
+  name: string; // 정관격 …
+  ten_god: string;
+  based_on: "transparent" | "primary";
+  based_gan: string;
+  confidence: string;
+}
+
+export interface Yongsin {
+  yongsin: string; // 木 火 土 金 水
+  huishin: string;
+  gisin: string;
+  gushin: string;
+  method: string;
+  based_on_strength: string;
+  notes: string[];
+  confidence: string;
+}
+
 export interface NatalResponse {
   pillars: FourPillars;
   day_master: string;
@@ -83,6 +111,9 @@ export interface NatalResponse {
   five_elements: FiveElements;
   relations: Relation[];
   daewoon: Daewoon;
+  strength: Strength;
+  geokguk: Geokguk;
+  yongsin: Yongsin;
 }
 
 export interface LuckResponse {

@@ -125,6 +125,48 @@ export function SajuScreen() {
                 <DaewoonList daewoon={data.daewoon} />
               </Card>
 
+              {/* ⚠ 잠정(provisional) 섹션 — 자문위원 검증 전 */}
+              <Card>
+                <View className="mb-3 flex-row items-center justify-between">
+                  <SectionTitle>강약·격국·용신</SectionTitle>
+                  <View className="rounded-md border border-accent-brown bg-bg-card px-2 py-0.5">
+                    <Text className="font-sans text-[10px] tracking-widest text-accent-clay">
+                      잠정 · 자문위원 검증 전
+                    </Text>
+                  </View>
+                </View>
+                <View className="gap-3">
+                  <View className="flex-row items-baseline gap-3">
+                    <Text className="w-16 font-sans text-sm text-ink-muted">신강신약</Text>
+                    <Text className="font-serif text-lg text-ink">{data.strength.label}</Text>
+                    <Text className="font-sans text-xs text-ink-muted">
+                      ({(data.strength.ally_ratio * 100).toFixed(0)}% 아군
+                      {data.strength.deuk_ryeong ? " · 득령" : ""}
+                      {data.strength.deuk_ji ? " · 득지" : ""})
+                    </Text>
+                  </View>
+                  <View className="flex-row items-baseline gap-3">
+                    <Text className="w-16 font-sans text-sm text-ink-muted">격국</Text>
+                    <Text className="font-serif text-lg text-gold-light">{data.geokguk.name}</Text>
+                    <Text className="font-sans text-xs text-ink-muted">
+                      ({data.geokguk.based_on === "transparent" ? "투출" : "본기"} ·{" "}
+                      {data.geokguk.based_gan})
+                    </Text>
+                  </View>
+                  <View className="flex-row items-baseline gap-3">
+                    <Text className="w-16 font-sans text-sm text-ink-muted">용신</Text>
+                    <Text className="font-serif text-lg text-gold">{data.yongsin.yongsin}</Text>
+                    <Text className="font-sans text-xs text-ink-muted">
+                      희 {data.yongsin.huishin} · 기 {data.yongsin.gisin} · 구 {data.yongsin.gushin}
+                    </Text>
+                  </View>
+                </View>
+                <Text className="mt-3 font-sans text-[11px] leading-5 text-ink-muted">
+                  본 결과는 통설 기반 자동 산출(잠정)입니다. 정통성 확정은 명리 자문위원
+                  검증 케이스 수집 후 갱신됩니다.
+                </Text>
+              </Card>
+
               <View className="mt-2">
                 <Button
                   label="AI 자문 시작하기 →"

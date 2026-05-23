@@ -5,6 +5,19 @@
 
 ---
 
+## 활성 기능 상태 (라이브)
+
+배포된 `GET /api/_status` 응답으로 확인 가능. 각 키는 해당 자격증명 설정 시 자동 활성:
+
+```
+saju_engine        → 항상 true
+ai_chat            → ANTHROPIC_API_KEY 설정 시
+preorder_webhook   → PREORDER_WEBHOOK_URL 설정 시
+database           → DATABASE_URL 설정 시
+payment_portone    → PORTONE_API_SECRET + PORTONE_STORE_ID 설정 시
+payment_kakao      → KAKAO_ADMIN_KEY 설정 시
+```
+
 ## ✅ 이번 세션에서 완료한 상용화 작업
 
 ### AI 자문 채팅 (핵심 제품)
@@ -57,6 +70,24 @@ PREORDER_WEBHOOK_URL=https://hooks.slack.com/...  # 또는 Google Apps Script, M
 ---
 
 ## 🔴 사용자 의사결정 + 자격증명이 필요한 다음 단계
+
+### 🟢 NEW: 잠정 strength/geokguk/yongsin (자동 산출, provisional)
+
+- `backend/src/engine/{strength,geokguk,yongsin}.py` — myeongri-policy.md 잠정 default 위에서 통설 단순 구현. **모든 결과에 `confidence: "provisional"`** + UI에 "잠정 · 자문위원 검증 전" 배지.
+- `analyze_natal` 응답에 `strength`/`geokguk`/`yongsin` 필드 추가.
+- AI 자문(Claude)에 이 잠정 결과까지 함께 전달돼 답변 깊이가 증가.
+- **자문위원이 정책 7·8을 확정하면 같은 시그니처로 정밀 구현으로 교체 가능** — API 계약 불변.
+
+### 🟢 NEW: DB 스캐폴딩 (인증·결제 준비)
+
+- `backend/src/models/db_models.py` — User / BirthRecord(암호화 컬럼) / Conversation / Message / Subscription / Preorder / ValidationCaseRow 모델.
+- `backend/alembic/` — env.py + 초기 마이그레이션(`20260523_0001_initial`).
+- **활성화 절차**:
+  1. Postgres 호스팅(추천 Supabase) 생성 → 연결 문자열 확보.
+  2. Vercel env에 `DATABASE_URL` 추가 (예: `postgresql://...`).
+  3. 로컬에서: `cd backend && alembic upgrade head` (DATABASE_URL은 셸에 export).
+  4. `/api/_status`에서 `database: true` 확인.
+  5. 다음 세션에서 auth/billing 라우터를 라이브로 등록 + 대화 영구화 연결.
 
 ### A. 회원·DB·대화 영구 저장
 지금은 출생정보가 Zustand(브라우저 메모리)에만 있고, 대화는 화면 단위로 휘발됩니다. 영구화에는 다음이 필요:

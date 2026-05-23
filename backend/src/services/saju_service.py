@@ -10,19 +10,25 @@ from src.api.v1.saju_schemas import (
     DaewoonPeriodResponse,
     DaewoonResponse,
     FiveElementsResponse,
+    GeokgukResponse,
     LuckResponse,
     NatalResponse,
     RelationResponse,
+    StrengthResponse,
+    YongsinResponse,
 )
 from src.engine import five_elements as fe
+from src.engine import geokguk as gk
 from src.engine import jeolgi, sewoon
 from src.engine import relations as rel
+from src.engine import strength as st
+from src.engine import yongsin as ys
 from src.engine.daewoon import build_daewoon, daewoon_direction, daewoon_start_age
 from src.engine.ganji import gan_ohaeng
 from src.engine.pillars import build_pillars
 from src.engine.policy import MyeongriPolicy
 from src.engine.schema import BirthInfo
-from src.engine.ten_gods import count_ten_gods_in_pillars
+from src.engine.ten_gods import TEN_GOD_HANJA, count_ten_gods_in_pillars
 
 
 def analyze_natal(birth: BirthInfo, policy: MyeongriPolicy | None = None) -> NatalResponse:
@@ -56,6 +62,37 @@ def analyze_natal(birth: BirthInfo, policy: MyeongriPolicy | None = None) -> Nat
         periods=periods,
     )
 
+    # ⚠ 잠정(provisional) — 자문위원 정책 7·8 미확정.
+    strength = st.assess_strength(pillars)
+    strength_dto = StrengthResponse(
+        label=strength.label,
+        ally_ratio=strength.ally_ratio,
+        deuk_ryeong=strength.deuk_ryeong,
+        deuk_ji=strength.deuk_ji,
+        notes=list(strength.notes),
+        confidence=strength.confidence,
+    )
+    geo = gk.determine_geokguk(pillars)
+    geokguk_dto = GeokgukResponse(
+        name=geo.name,
+        ten_god=geo.ten_god.value,  # 한글 (e.g., "편관")
+        based_on=geo.based_on,
+        based_gan=geo.based_gan,
+        confidence=geo.confidence,
+    )
+    yong = ys.derive_yongsin(pillars)
+    yongsin_dto = YongsinResponse(
+        yongsin=yong.yongsin.value,
+        huishin=yong.huishin.value,
+        gisin=yong.gisin.value,
+        gushin=yong.gushin.value,
+        method=yong.method,
+        based_on_strength=yong.based_on_strength,
+        notes=list(yong.notes),
+        confidence=yong.confidence,
+    )
+    _ = TEN_GOD_HANJA  # 추후 한자 병기에 사용
+
     return NatalResponse(
         pillars=pillars,
         day_master=day_master,
@@ -64,6 +101,9 @@ def analyze_natal(birth: BirthInfo, policy: MyeongriPolicy | None = None) -> Nat
         five_elements=five,
         relations=relations,
         daewoon=daewoon,
+        strength=strength_dto,
+        geokguk=geokguk_dto,
+        yongsin=yongsin_dto,
     )
 
 

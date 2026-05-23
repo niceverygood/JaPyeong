@@ -32,6 +32,26 @@ async def health() -> dict[str, str]:
     return {"status": "ok", "service": "japyeong", "env": "vercel"}
 
 
+@app.get("/api/_status")
+async def feature_status() -> dict:
+    """활성 기능 노출 — 어떤 자격증명이 들어왔는지 한눈에."""
+    return {
+        "saju_engine": True,  # 항상 활성 (룰베이스)
+        "ai_chat": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "preorder_webhook": bool(os.environ.get("PREORDER_WEBHOOK_URL")),
+        "database": bool(os.environ.get("DATABASE_URL")),
+        "payment_portone": bool(
+            os.environ.get("PORTONE_API_SECRET") and os.environ.get("PORTONE_STORE_ID")
+        ),
+        "payment_kakao": bool(os.environ.get("KAKAO_ADMIN_KEY")),
+        "notes": [
+            "saju_engine: 룰베이스 + 잠정 strength/geokguk/yongsin",
+            "ai_chat: ANTHROPIC_API_KEY 설정 시 활성",
+            "database: DATABASE_URL 설정 + alembic 마이그레이션 후 활성",
+        ],
+    }
+
+
 # ── 사전예약 수집 ──────────────────────────────────────────────
 class PreorderRequest(BaseModel):
     email: EmailStr
