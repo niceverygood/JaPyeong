@@ -31,12 +31,20 @@ from src.engine.schema import BirthInfo
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # 다양성·비용 균형 — 4개 모델 (Anthropic/OpenAI/Google/Deepseek 계열).
+# OpenRouter는 식별자를 종종 변경. 404 발생 시 환경변수 CROSSCHECK_MODELS(쉼표구분)로 오버라이드 가능.
 DEFAULT_MODELS: tuple[str, ...] = (
-    "anthropic/claude-3.5-sonnet",
+    "anthropic/claude-sonnet-4",
     "openai/gpt-4o-mini",
     "google/gemini-2.0-flash-001",
     "deepseek/deepseek-chat",
 )
+
+
+def _resolve_models() -> tuple[str, ...]:
+    override = os.environ.get("CROSSCHECK_MODELS", "").strip()
+    if override:
+        return tuple(m.strip() for m in override.split(",") if m.strip())
+    return DEFAULT_MODELS
 
 VALID_STRENGTH = {"신강", "신약", "중화"}
 VALID_GEOKGUK = {
@@ -205,13 +213,15 @@ async def _call_one(client: httpx.AsyncClient, key: str, model: str, prompt: str
 
 async def run_crosscheck(
     cases: list[BirthInfo],
-    models: tuple[str, ...] = DEFAULT_MODELS,
+    models: tuple[str, ...] | None = None,
     api_key: str | None = None,
 ) -> CrossCheckReport:
     """모든 케이스 × 모든 모델 병렬 호출 후 합의 매트릭스 산출."""
     key = api_key or os.environ.get("OPENROUTER_API_KEY", "")
     if not key:
         raise RuntimeError("OPENROUTER_API_KEY 미설정")
+    if models is None:
+        models = _resolve_models()
 
     # 엔진 평가는 동기 (CPU)
     engine_labels = [_engine_evaluate(b) for b in cases]
