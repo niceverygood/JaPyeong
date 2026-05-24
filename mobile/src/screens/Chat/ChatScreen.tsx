@@ -14,19 +14,13 @@ import { Button } from "@/components/primitives/Button";
 import { Card } from "@/components/primitives/Card";
 import { useBirthStore } from "@/stores/birthStore";
 
-interface Turn {
-  question: string;
-  response: ChatResponse | null;
-  error?: string;
-}
-
 interface Category {
   hanja: string;
   label: string;
   prompt: string;
 }
 
-// 12개 한자 카드 — 누르면 그 영역 전용 자문이 즉시 시작.
+// 12개 한자 카드 — 누르면 그 sector 전용 사주풀이가 단일 결과 패널로 표시.
 const CATEGORIES: Category[] = [
   {
     hanja: "職",
@@ -102,11 +96,16 @@ const CATEGORIES: Category[] = [
   },
 ];
 
+type ActiveState =
+  | { kind: "loading"; category?: Category; question: string }
+  | { kind: "done"; category?: Category; question: string; response: ChatResponse }
+  | { kind: "error"; category?: Category; question: string; error: string };
+
 export function ChatScreen() {
   const birth = useBirthStore((s) => s.birth);
   const chat = useChat();
+  const [active, setActive] = useState<ActiveState | null>(null);
   const [input, setInput] = useState("");
-  const [turns, setTurns] = useState<Turn[]>([]);
 
   if (!birth) {
     return (
@@ -116,124 +115,185 @@ export function ChatScreen() {
     );
   }
 
-  const submit = (q: string) => {
-    const question = q.trim();
-    if (!question || chat.isPending) return;
-    const idx = turns.length;
-    setTurns((t) => [...t, { question, response: null }]);
+  const consult = (question: string, category?: Category) => {
+    const q = question.trim();
+    if (!q || chat.isPending) return;
+    setActive({ kind: "loading", category, question: q });
     setInput("");
     chat.mutate(
-      { birth, question },
+      { birth, question: q },
       {
         onSuccess: (response) =>
-          setTurns((t) => t.map((x, i) => (i === idx ? { ...x, response } : x))),
+          setActive({ kind: "done", category, question: q, response }),
         onError: (e: unknown) =>
-          setTurns((t) =>
-            t.map((x, i) =>
-              i === idx ? { ...x, error: e instanceof Error ? e.message : String(e) } : x,
-            ),
-          ),
+          setActive({
+            kind: "error",
+            category,
+            question: q,
+            error: e instanceof Error ? e.message : String(e),
+          }),
       },
     );
   };
+
+  const activeHanja = active?.category?.hanja;
 
   return (
     <SafeAreaView className="flex-1 bg-bg-base" edges={["bottom"]}>
       <ScrollView keyboardShouldPersistTaps="handled">
         <View className="gap-3 p-5">
-          {/* 첫 진입 안내 (간결) */}
-          {turns.length === 0 && (
+          {/* 안내 — 처음 한 번만 가볍게 */}
+          {!active && (
             <Card>
-              <Text className="mb-1.5 font-serif text-base text-ink">자평 자문</Text>
+              <Text className="mb-1.5 font-serif text-base text-ink">자평 사주풀이</Text>
               <Text className="font-sans text-sm leading-6 text-ink-secondary">
-                관심 영역을 누르면 그 분야 전용 자문이 즉시 시작됩니다. 아래 채팅으로 자유 질문도
-                가능합니다. 단정은 하지 않으며, 모든 답변엔 명리 근거·고전 출처가 함께 표기됩니다.
+                관심 영역을 누르면 그 분야 전용 사주풀이가 펼쳐집니다. 다른 영역으로 언제든
+                바꿀 수 있고, 아래에 자유 질문도 입력할 수 있습니다.
               </Text>
             </Card>
           )}
 
-          {/* 카테고리 카드 그리드 — 채팅 도중에도 항상 노출 (다른 영역으로 즉시 분기 가능) */}
+          {/* 카테고리 카드 그리드 — 항상 노출, 활성 카드 골드 강조 */}
           <View className="flex-row flex-wrap gap-2">
-            {CATEGORIES.map((c) => (
-              <Pressable
-                key={c.hanja}
-                onPress={() => submit(c.prompt)}
-                disabled={chat.isPending}
-                className={`w-[48%] flex-row items-center justify-center gap-3 rounded-2xl border border-line bg-bg-card py-3.5 active:opacity-80 ${
-                  chat.isPending ? "opacity-50" : ""
-                }`}
-              >
-                <Text className="font-serif text-2xl text-gold-light">{c.hanja}</Text>
-                <Text className="font-sans text-sm tracking-wider text-ink-secondary">
-                  {c.label}
-                </Text>
-              </Pressable>
-            ))}
+            {CATEGORIES.map((c) => {
+              const isActive = activeHanja === c.hanja;
+              const isLoading = chat.isPending && isActive;
+              return (
+                <Pressable
+                  key={c.hanja}
+                  onPress={() => consult(c.prompt, c)}
+                  disabled={chat.isPending}
+                  className={`w-[48%] flex-row items-center justify-center gap-3 rounded-2xl border py-3.5 active:opacity-80 ${
+                    isActive
+                      ? "border-gold bg-bg-elevated"
+                      : "border-line bg-bg-card"
+                  } ${chat.isPending && !isActive ? "opacity-40" : ""}`}
+                >
+                  <Text
+                    className={`font-serif text-2xl ${
+                      isActive ? "text-gold" : "text-gold-light"
+                    }`}
+                  >
+                    {c.hanja}
+                  </Text>
+                  <Text
+                    className={`font-sans text-sm tracking-wider ${
+                      isActive ? "text-ink" : "text-ink-secondary"
+                    }`}
+                  >
+                    {c.label}
+                  </Text>
+                  {isLoading && <ActivityIndicator color="#C9A961" size="small" />}
+                </Pressable>
+              );
+            })}
           </View>
 
-          {turns.map((t, i) => (
-            <View key={i} className="gap-2">
-              {/* user */}
-              <View className="self-end max-w-[85%] rounded-2xl rounded-br-md border border-line bg-bg-elevated px-4 py-3">
-                <Text className="font-sans text-base text-ink">{t.question}</Text>
-              </View>
-              {/* ai */}
-              {t.response ? (
-                <Card>
-                  {/* 신뢰도 배지 */}
-                  <View className="mb-2 flex-row items-center justify-between">
-                    <Text className="font-sans text-xs text-ink-muted">AI 자문</Text>
-                    <View
-                      className={`rounded-md px-2 py-0.5 ${
-                        t.response.confidence === "high"
-                          ? "border border-ohaeng-mok"
-                          : t.response.confidence === "low"
-                            ? "border border-accent-brown"
-                            : "border border-line"
-                      }`}
-                    >
-                      <Text className="font-sans text-[10px] tracking-wider text-ink-secondary">
-                        신뢰도 {t.response.confidence}
+          {/* 단일 결과 패널 — 사주풀이 */}
+          {active && (
+            <Card>
+              {/* 헤더: 어떤 풀이인지 */}
+              <View className="mb-3 flex-row items-center justify-between">
+                <View className="flex-row items-baseline gap-2">
+                  {active.category ? (
+                    <>
+                      <Text className="font-serif text-2xl text-gold-light">
+                        {active.category.hanja}
                       </Text>
-                    </View>
+                      <Text className="font-serif text-base text-ink">
+                        {active.category.label} 풀이
+                      </Text>
+                    </>
+                  ) : (
+                    <Text className="font-serif text-base text-ink">자유 질문 풀이</Text>
+                  )}
+                </View>
+                {active.kind === "done" && (
+                  <View
+                    className={`rounded-md px-2 py-0.5 ${
+                      active.response.confidence === "high"
+                        ? "border border-ohaeng-mok"
+                        : active.response.confidence === "low"
+                          ? "border border-accent-brown"
+                          : "border border-line"
+                    }`}
+                  >
+                    <Text className="font-sans text-[10px] tracking-wider text-ink-secondary">
+                      신뢰도 {active.response.confidence}
+                    </Text>
                   </View>
+                )}
+              </View>
 
+              {/* 로딩 */}
+              {active.kind === "loading" && (
+                <View className="flex-row items-center gap-2 py-2">
+                  <ActivityIndicator color="#C9A961" />
+                  <Text className="font-sans text-sm text-ink-secondary">
+                    사주풀이를 정리하는 중…
+                  </Text>
+                </View>
+              )}
+
+              {/* 에러 */}
+              {active.kind === "error" && (
+                <View>
+                  <Text className="font-sans text-sm text-ohaeng-hwa">
+                    풀이를 불러오지 못했습니다.
+                  </Text>
+                  <Text className="mt-1 font-sans text-xs text-ink-muted">
+                    {active.error}
+                  </Text>
+                  <View className="mt-3 w-32">
+                    <Button
+                      label="다시 시도"
+                      onPress={() =>
+                        consult(active.question, active.category)
+                      }
+                    />
+                  </View>
+                </View>
+              )}
+
+              {/* 결과 */}
+              {active.kind === "done" && (
+                <>
                   {/* 본문 */}
                   <Text className="font-sans text-base leading-7 text-ink">
-                    {t.response.answer}
+                    {active.response.answer}
                   </Text>
 
-                  {/* perspective */}
-                  {t.response.perspective ? (
+                  {/* 관점 */}
+                  {active.response.perspective ? (
                     <View className="mt-3 rounded-lg border border-line bg-bg-card p-3">
                       <Text className="mb-1 font-sans text-[10px] tracking-widest text-gold-light">
                         관점
                       </Text>
                       <Text className="font-sans text-sm leading-6 text-ink-secondary">
-                        {t.response.perspective}
+                        {active.response.perspective}
                       </Text>
                     </View>
                   ) : null}
 
-                  {/* timing */}
-                  {t.response.timing ? (
+                  {/* 시기 */}
+                  {active.response.timing ? (
                     <View className="mt-2 rounded-lg border border-line bg-bg-card p-3">
                       <Text className="mb-1 font-sans text-[10px] tracking-widest text-gold-light">
                         시기
                       </Text>
                       <Text className="font-sans text-sm leading-6 text-ink-secondary">
-                        {t.response.timing}
+                        {active.response.timing}
                       </Text>
                     </View>
                   ) : null}
 
-                  {/* cautions */}
-                  {t.response.cautions.length > 0 && (
+                  {/* 주의 */}
+                  {active.response.cautions.length > 0 && (
                     <View className="mt-2 rounded-lg border border-accent-brown bg-bg-card p-3">
                       <Text className="mb-1 font-sans text-[10px] tracking-widest text-accent-clay">
                         주의
                       </Text>
-                      {t.response.cautions.map((c, j) => (
+                      {active.response.cautions.map((c, j) => (
                         <Text
                           key={j}
                           className="font-sans text-sm leading-6 text-ink-secondary"
@@ -244,13 +304,13 @@ export function ChatScreen() {
                     </View>
                   )}
 
-                  {/* contested — 학파별 견해 차이 */}
-                  {t.response.contested.length > 0 && (
+                  {/* 학파별 견해 */}
+                  {active.response.contested.length > 0 && (
                     <View className="mt-2 rounded-lg border border-line bg-bg-card p-3">
                       <Text className="mb-1 font-sans text-[10px] tracking-widest text-ink-muted">
                         학파별 견해
                       </Text>
-                      {t.response.contested.map((c, j) => (
+                      {active.response.contested.map((c, j) => (
                         <Text
                           key={j}
                           className="font-sans text-sm leading-6 text-ink-secondary"
@@ -262,18 +322,18 @@ export function ChatScreen() {
                   )}
 
                   {/* 근거 */}
-                  {t.response.basis ? (
+                  {active.response.basis ? (
                     <View className="mt-3 self-start rounded-md border border-line bg-bg-card px-2 py-1">
                       <Text className="font-serif text-xs text-gold-light">
-                        근거 · {t.response.basis}
+                        근거 · {active.response.basis}
                       </Text>
                     </View>
                   ) : null}
 
                   {/* 인용 칩 */}
-                  {t.response.citations.length > 0 && (
+                  {active.response.citations.length > 0 && (
                     <View className="mt-2 flex-row flex-wrap gap-1.5">
-                      {t.response.citations.map((c, j) => (
+                      {active.response.citations.map((c, j) => (
                         <View
                           key={j}
                           className="rounded-md border border-accent-brown bg-bg-card px-2 py-1"
@@ -287,52 +347,50 @@ export function ChatScreen() {
                     </View>
                   )}
 
-                  {t.response.follow_up_suggestions.length > 0 && (
+                  {/* 이어서 물어볼 만한 것 */}
+                  {active.response.follow_up_suggestions.length > 0 && (
                     <View className="mt-3 gap-1.5">
-                      <Text className="font-sans text-xs text-ink-muted">이어서 물어볼 만한 것</Text>
-                      {t.response.follow_up_suggestions.map((s, j) => (
+                      <Text className="font-sans text-xs text-ink-muted">
+                        이어서 물어볼 만한 것
+                      </Text>
+                      {active.response.follow_up_suggestions.map((s, j) => (
                         <Pressable
                           key={j}
-                          onPress={() => submit(s)}
+                          onPress={() => consult(s, active.category)}
                           className="rounded-md border border-line px-3 py-2"
                         >
-                          <Text className="font-sans text-sm text-ink-secondary">— {s}</Text>
+                          <Text className="font-sans text-sm text-ink-secondary">
+                            — {s}
+                          </Text>
                         </Pressable>
                       ))}
                     </View>
                   )}
-                </Card>
-              ) : t.error ? (
-                <Card>
-                  <Text className="font-sans text-sm text-ohaeng-hwa">자문을 불러오지 못했습니다.</Text>
-                  <Text className="mt-1 font-sans text-xs text-ink-muted">{t.error}</Text>
-                </Card>
-              ) : (
-                <Card>
-                  <View className="flex-row items-center gap-2">
-                    <ActivityIndicator color="#C9A961" />
-                    <Text className="font-sans text-sm text-ink-secondary">생각을 정리하는 중…</Text>
-                  </View>
-                </Card>
+                </>
               )}
-            </View>
-          ))}
+            </Card>
+          )}
         </View>
       </ScrollView>
 
+      {/* 자유 질문 입력 (보조) */}
       <View className="border-t border-line bg-bg-base p-3">
         <View className="flex-row gap-2">
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder="질문을 입력하세요"
+            placeholder="자유 질문을 입력하세요 (예: 庚辰 대운 동안 유리한 분야?)"
             placeholderTextColor="#6B6357"
             multiline
             className="min-h-12 max-h-32 flex-1 rounded-2xl border border-line bg-bg-elevated px-4 py-3 font-sans text-base text-ink"
-            onSubmitEditing={() => submit(input)}
+            onSubmitEditing={() => consult(input)}
           />
-          <View className="w-28">
-            <Button label="보내기" onPress={() => submit(input)} loading={chat.isPending} />
+          <View className="w-24">
+            <Button
+              label="풀이"
+              onPress={() => consult(input)}
+              loading={chat.isPending}
+            />
           </View>
         </View>
       </View>
