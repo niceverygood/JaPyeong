@@ -6,6 +6,7 @@ Phase 4 핵심: 3층 책임 분리.
 from fastapi import APIRouter, HTTPException
 
 from src.ai import consultation, guardrails
+from src.ai.glossary import annotate_hanja
 from src.api.v1.chat_schemas import ChatRequest, ChatResponse, CitationDTO
 from src.services import saju_service
 
@@ -46,16 +47,23 @@ async def chat(req: ChatRequest) -> ChatResponse:
     # 3. 후처리 가드레일
     post = guardrails.filter_answer(result.answer)
 
+    # 4. 한자 → '한글(한자)' 자동 병기 (모든 텍스트 필드)
     return ChatResponse(
-        answer=post.answer,
-        basis=result.basis,
-        perspective=result.perspective,
-        timing=result.timing,
-        cautions=list(result.cautions),
-        citations=[CitationDTO(source=c.source, volume=c.volume) for c in result.citations],
-        contested=list(result.contested),
+        answer=annotate_hanja(post.answer),
+        basis=annotate_hanja(result.basis),
+        perspective=annotate_hanja(result.perspective),
+        timing=annotate_hanja(result.timing),
+        cautions=[annotate_hanja(c) for c in result.cautions],
+        citations=[
+            CitationDTO(
+                source=annotate_hanja(c.source),
+                volume=annotate_hanja(c.volume) if c.volume else None,
+            )
+            for c in result.citations
+        ],
+        contested=[annotate_hanja(c) for c in result.contested],
         confidence=result.confidence,
-        follow_up_suggestions=list(result.follow_up_suggestions),
+        follow_up_suggestions=[annotate_hanja(s) for s in result.follow_up_suggestions],
         flags=list(post.flags),
         model=result.model,
     )

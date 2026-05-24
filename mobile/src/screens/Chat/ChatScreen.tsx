@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useChat, type ChatResponse } from "@/api/chat";
 import { Button } from "@/components/primitives/Button";
 import { Card } from "@/components/primitives/Card";
+import { HanjaText } from "@/components/primitives/HanjaText";
 import { useBirthStore } from "@/stores/birthStore";
 
 interface Category {
@@ -252,13 +253,28 @@ export function ChatScreen() {
                 </View>
               )}
 
-              {/* 결과 */}
+              {/* 결과 — 한자는 '한글(漢字)' 병기 + hover 시 의미 툴팁 */}
               {active.kind === "done" && (
                 <>
+                  {/* 안내: 한자에 마우스를 올리면 의미가 표시됩니다 */}
+                  {/한글\([一-鿿]+\)/.test(
+                    [
+                      active.response.answer,
+                      active.response.perspective,
+                      active.response.timing,
+                      ...active.response.cautions,
+                      ...active.response.contested,
+                    ].join(" "),
+                  ) && (
+                    <Text className="mb-2 font-sans text-[10px] text-ink-muted">
+                      한자 단어 위에 마우스를 올리면 의미가 표시됩니다.
+                    </Text>
+                  )}
+
                   {/* 본문 */}
-                  <Text className="font-sans text-base leading-7 text-ink">
+                  <HanjaText className="font-sans text-base leading-7 text-ink">
                     {active.response.answer}
-                  </Text>
+                  </HanjaText>
 
                   {/* 관점 */}
                   {active.response.perspective ? (
@@ -266,9 +282,9 @@ export function ChatScreen() {
                       <Text className="mb-1 font-sans text-[10px] tracking-widest text-gold-light">
                         관점
                       </Text>
-                      <Text className="font-sans text-sm leading-6 text-ink-secondary">
+                      <HanjaText className="font-sans text-sm leading-6 text-ink-secondary">
                         {active.response.perspective}
-                      </Text>
+                      </HanjaText>
                     </View>
                   ) : null}
 
@@ -278,9 +294,9 @@ export function ChatScreen() {
                       <Text className="mb-1 font-sans text-[10px] tracking-widest text-gold-light">
                         시기
                       </Text>
-                      <Text className="font-sans text-sm leading-6 text-ink-secondary">
+                      <HanjaText className="font-sans text-sm leading-6 text-ink-secondary">
                         {active.response.timing}
-                      </Text>
+                      </HanjaText>
                     </View>
                   ) : null}
 
@@ -291,12 +307,12 @@ export function ChatScreen() {
                         주의
                       </Text>
                       {active.response.cautions.map((c, j) => (
-                        <Text
+                        <HanjaText
                           key={j}
                           className="font-sans text-sm leading-6 text-ink-secondary"
                         >
-                          • {c}
-                        </Text>
+                          {`• ${c}`}
+                        </HanjaText>
                       ))}
                     </View>
                   )}
@@ -308,12 +324,12 @@ export function ChatScreen() {
                         학파별 견해
                       </Text>
                       {active.response.contested.map((c, j) => (
-                        <Text
+                        <HanjaText
                           key={j}
                           className="font-sans text-sm leading-6 text-ink-secondary"
                         >
-                          ◦ {c}
-                        </Text>
+                          {`◦ ${c}`}
+                        </HanjaText>
                       ))}
                     </View>
                   )}
@@ -321,9 +337,9 @@ export function ChatScreen() {
                   {/* 근거 */}
                   {active.response.basis ? (
                     <View className="mt-3 self-start rounded-md border border-line bg-bg-card px-2 py-1">
-                      <Text className="font-serif text-xs text-gold-light">
-                        근거 · {active.response.basis}
-                      </Text>
+                      <HanjaText className="font-serif text-xs text-gold-light">
+                        {`근거 · ${active.response.basis}`}
+                      </HanjaText>
                     </View>
                   ) : null}
 
@@ -335,10 +351,9 @@ export function ChatScreen() {
                           key={j}
                           className="rounded-md border border-accent-brown bg-bg-card px-2 py-1"
                         >
-                          <Text className="font-serif text-xs text-accent-clay">
-                            {c.source}
-                            {c.volume ? ` · ${c.volume}` : ""}
-                          </Text>
+                          <HanjaText className="font-serif text-xs text-accent-clay">
+                            {c.source + (c.volume ? ` · ${c.volume}` : "")}
+                          </HanjaText>
                         </View>
                       ))}
                     </View>
@@ -356,9 +371,9 @@ export function ChatScreen() {
                           onPress={() => consult(s, active.category)}
                           className="rounded-md border border-line px-3 py-2"
                         >
-                          <Text className="font-sans text-sm text-ink-secondary">
-                            — {s}
-                          </Text>
+                          <HanjaText className="font-sans text-sm text-ink-secondary">
+                            {`— ${s}`}
+                          </HanjaText>
                         </Pressable>
                       ))}
                     </View>
