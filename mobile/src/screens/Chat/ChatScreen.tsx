@@ -20,7 +20,63 @@ interface Turn {
   error?: string;
 }
 
-const SUGGESTIONS = ["진로", "관계", "재정 점검", "건강 흐름", "결단·실행 적기"];
+interface Category {
+  hanja: string;
+  label: string;
+  prompt: string;
+}
+
+// 8개 한자 카드 — 누르면 그 영역 전용 자문이 즉시 시작.
+const CATEGORIES: Category[] = [
+  {
+    hanja: "業",
+    label: "사업·창업",
+    prompt:
+      "사주에서 사업과 창업의 시기·방향을 짚어 주세요. 재성과 식상의 흐름, 대운에서 유리한 구간과 주의해야 할 시기를 알려 주세요.",
+  },
+  {
+    hanja: "緣",
+    label: "연애",
+    prompt:
+      "연애와 인연의 흐름을 사주 관점에서 봐 주세요. 배우자성·합·충·도화·홍염 같은 신호와 앞으로의 흐름을 짚어 주세요.",
+  },
+  {
+    hanja: "婚",
+    label: "결혼",
+    prompt:
+      "결혼 적기와 배우자 관점에서 봐 주세요. 일주의 배우자성, 합·충·형, 대운에서 결혼에 부합하는 시기를 짚어 주세요.",
+  },
+  {
+    hanja: "職",
+    label: "진로·직업",
+    prompt:
+      "진로와 직업 방향을 사주 관점에서 짚어 주세요. 관성과 식상의 흐름, 격국·용신 관점에서 어떤 분야가 어울리는지 알려 주세요.",
+  },
+  {
+    hanja: "財",
+    label: "재정·투자",
+    prompt:
+      "재정 운영과 투자 관점에서 봐 주세요. 재성의 강약과 위치, 보존과 확장 사이의 비율, 주의 시기를 짚어 주세요.",
+  },
+  {
+    hanja: "體",
+    label: "건강·체력",
+    prompt:
+      "오행 균형 관점에서 건강과 체력 신호를 봐 주세요. 약한 오행·강한 오행·대운에서 주의할 시기를 알려 주세요. (의학적 진단이 아닌 명리적 관점)",
+  },
+  {
+    hanja: "家",
+    label: "가족·자녀",
+    prompt:
+      "가족 관계와 자녀 관점에서 사주를 봐 주세요. 부모성·자녀성·형제성의 흐름과 가족 안에서의 역할을 짚어 주세요.",
+  },
+  {
+    hanja: "遷",
+    label: "이주·환경",
+    prompt:
+      "이주와 환경 변화의 시기·방향을 사주 관점에서 짚어 주세요. 역마·합·충 등 이동 신호와 유리한 방향을 알려 주세요.",
+  },
+];
 
 export function ChatScreen() {
   const birth = useBirthStore((s) => s.birth);
@@ -61,26 +117,35 @@ export function ChatScreen() {
     <SafeAreaView className="flex-1 bg-bg-base" edges={["bottom"]}>
       <ScrollView keyboardShouldPersistTaps="handled">
         <View className="gap-3 p-5">
+          {/* 첫 진입 안내 (간결) */}
           {turns.length === 0 && (
             <Card>
-              <Text className="mb-2 font-serif text-base text-ink">AI 자문</Text>
+              <Text className="mb-1.5 font-serif text-base text-ink">자평 자문</Text>
               <Text className="font-sans text-sm leading-6 text-ink-secondary">
-                중요한 결정 앞에서 사주 관점을 함께 짚어 드립니다. 단정은 하지 않으며, 모든 답변엔
-                명리적 근거와 고전 출처가 함께 표기됩니다.
+                관심 영역을 누르면 그 분야 전용 자문이 즉시 시작됩니다. 아래 채팅으로 자유 질문도
+                가능합니다. 단정은 하지 않으며, 모든 답변엔 명리 근거·고전 출처가 함께 표기됩니다.
               </Text>
-              <View className="mt-4 flex-row flex-wrap gap-2">
-                {SUGGESTIONS.map((s) => (
-                  <Pressable
-                    key={s}
-                    onPress={() => submit(`${s}에 대한 자문을 부탁드립니다.`)}
-                    className="rounded-full border border-line bg-bg-card px-3 py-1.5"
-                  >
-                    <Text className="font-sans text-sm text-ink-secondary">{s}</Text>
-                  </Pressable>
-                ))}
-              </View>
             </Card>
           )}
+
+          {/* 카테고리 카드 그리드 — 채팅 도중에도 항상 노출 (다른 영역으로 즉시 분기 가능) */}
+          <View className="flex-row flex-wrap gap-2">
+            {CATEGORIES.map((c) => (
+              <Pressable
+                key={c.hanja}
+                onPress={() => submit(c.prompt)}
+                disabled={chat.isPending}
+                className={`w-[48%] items-center rounded-2xl border border-line bg-bg-card py-4 active:opacity-80 ${
+                  chat.isPending ? "opacity-50" : ""
+                }`}
+              >
+                <Text className="mb-1 font-serif text-3xl text-gold-light">{c.hanja}</Text>
+                <Text className="font-sans text-xs tracking-wider text-ink-secondary">
+                  {c.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
 
           {turns.map((t, i) => (
             <View key={i} className="gap-2">
