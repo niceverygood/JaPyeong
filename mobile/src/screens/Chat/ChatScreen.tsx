@@ -26,31 +26,19 @@ interface Category {
   prompt: string;
 }
 
-// 8개 한자 카드 — 누르면 그 영역 전용 자문이 즉시 시작.
+// 12개 한자 카드 — 누르면 그 영역 전용 자문이 즉시 시작.
 const CATEGORIES: Category[] = [
-  {
-    hanja: "業",
-    label: "사업·창업",
-    prompt:
-      "사주에서 사업과 창업의 시기·방향을 짚어 주세요. 재성과 식상의 흐름, 대운에서 유리한 구간과 주의해야 할 시기를 알려 주세요.",
-  },
-  {
-    hanja: "緣",
-    label: "연애",
-    prompt:
-      "연애와 인연의 흐름을 사주 관점에서 봐 주세요. 배우자성·합·충·도화·홍염 같은 신호와 앞으로의 흐름을 짚어 주세요.",
-  },
-  {
-    hanja: "婚",
-    label: "결혼",
-    prompt:
-      "결혼 적기와 배우자 관점에서 봐 주세요. 일주의 배우자성, 합·충·형, 대운에서 결혼에 부합하는 시기를 짚어 주세요.",
-  },
   {
     hanja: "職",
     label: "진로·직업",
     prompt:
       "진로와 직업 방향을 사주 관점에서 짚어 주세요. 관성과 식상의 흐름, 격국·용신 관점에서 어떤 분야가 어울리는지 알려 주세요.",
+  },
+  {
+    hanja: "業",
+    label: "사업·창업",
+    prompt:
+      "사업과 창업의 시기·방향을 짚어 주세요. 재성과 식상의 흐름, 대운에서 유리한 구간과 주의해야 할 시기를 알려 주세요.",
   },
   {
     hanja: "財",
@@ -59,22 +47,58 @@ const CATEGORIES: Category[] = [
       "재정 운영과 투자 관점에서 봐 주세요. 재성의 강약과 위치, 보존과 확장 사이의 비율, 주의 시기를 짚어 주세요.",
   },
   {
+    hanja: "緣",
+    label: "연애·인연",
+    prompt:
+      "연애와 인연의 흐름을 사주 관점에서 봐 주세요. 배우자성·합·충·도화·홍염 같은 신호와 앞으로의 흐름을 짚어 주세요.",
+  },
+  {
+    hanja: "婚",
+    label: "결혼·배우자",
+    prompt:
+      "결혼 적기와 배우자 관점에서 봐 주세요. 일주의 배우자성·합·충·형, 대운에서 결혼에 부합하는 시기와 배우자의 결을 짚어 주세요.",
+  },
+  {
+    hanja: "子",
+    label: "자녀·출산",
+    prompt:
+      "자녀운과 출산 시기, 자녀와의 관계를 봐 주세요. 식상(여)·관성(남)의 흐름과 자녀 자리 신호를 짚어 주세요.",
+  },
+  {
+    hanja: "家",
+    label: "가족 관계",
+    prompt:
+      "가족 관계를 사주 관점에서 봐 주세요. 부모성·형제성·세대 간 흐름과 가족 안에서의 역할을 짚어 주세요.",
+  },
+  {
     hanja: "體",
     label: "건강·체력",
     prompt:
       "오행 균형 관점에서 건강과 체력 신호를 봐 주세요. 약한 오행·강한 오행·대운에서 주의할 시기를 알려 주세요. (의학적 진단이 아닌 명리적 관점)",
   },
   {
-    hanja: "家",
-    label: "가족·자녀",
+    hanja: "學",
+    label: "학업·시험",
     prompt:
-      "가족 관계와 자녀 관점에서 사주를 봐 주세요. 부모성·자녀성·형제성의 흐름과 가족 안에서의 역할을 짚어 주세요.",
+      "학업·시험·자격증 관점에서 봐 주세요. 인성의 강약과 식상 흐름, 대운에서 학업·시험에 유리한 시기를 짚어 주세요.",
   },
   {
-    hanja: "遷",
-    label: "이주·환경",
+    hanja: "移",
+    label: "이주·이사",
     prompt:
-      "이주와 환경 변화의 시기·방향을 사주 관점에서 짚어 주세요. 역마·합·충 등 이동 신호와 유리한 방향을 알려 주세요.",
+      "이주·이사·해외 관점에서 봐 주세요. 역마·합·충 등 이동 신호와 방위, 유리한 시기를 짚어 주세요.",
+  },
+  {
+    hanja: "心",
+    label: "마음·심리",
+    prompt:
+      "마음·심리·기복 관점에서 봐 주세요. 격국의 안정성, 오행 편중에서 오는 정서의 결, 스트레스 신호와 회복 자원을 짚어 주세요.",
+  },
+  {
+    hanja: "變",
+    label: "변화·전환점",
+    prompt:
+      "큰 변화·전환점·결단 관점에서 봐 주세요. 대운 전환, 합·충에 따른 변동 가능성, 결단의 시기를 짚어 주세요.",
   },
 ];
 
@@ -135,12 +159,12 @@ export function ChatScreen() {
                 key={c.hanja}
                 onPress={() => submit(c.prompt)}
                 disabled={chat.isPending}
-                className={`w-[48%] items-center rounded-2xl border border-line bg-bg-card py-4 active:opacity-80 ${
+                className={`w-[48%] flex-row items-center justify-center gap-3 rounded-2xl border border-line bg-bg-card py-3.5 active:opacity-80 ${
                   chat.isPending ? "opacity-50" : ""
                 }`}
               >
-                <Text className="mb-1 font-serif text-3xl text-gold-light">{c.hanja}</Text>
-                <Text className="font-sans text-xs tracking-wider text-ink-secondary">
+                <Text className="font-serif text-2xl text-gold-light">{c.hanja}</Text>
+                <Text className="font-sans text-sm tracking-wider text-ink-secondary">
                   {c.label}
                 </Text>
               </Pressable>
