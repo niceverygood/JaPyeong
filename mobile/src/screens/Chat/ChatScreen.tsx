@@ -4,7 +4,6 @@ import {
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -105,7 +104,6 @@ export function ChatScreen() {
   const birth = useBirthStore((s) => s.birth);
   const chat = useChat();
   const [active, setActive] = useState<ActiveState | null>(null);
-  const [input, setInput] = useState("");
 
   if (!birth) {
     return (
@@ -119,7 +117,6 @@ export function ChatScreen() {
     const q = question.trim();
     if (!q || chat.isPending) return;
     setActive({ kind: "loading", category, question: q });
-    setInput("");
     chat.mutate(
       { birth, question: q },
       {
@@ -148,7 +145,7 @@ export function ChatScreen() {
               <Text className="mb-1.5 font-serif text-base text-ink">자평 사주풀이</Text>
               <Text className="font-sans text-sm leading-6 text-ink-secondary">
                 관심 영역을 누르면 그 분야 전용 사주풀이가 펼쳐집니다. 다른 영역으로 언제든
-                바꿀 수 있고, 아래에 자유 질문도 입력할 수 있습니다.
+                바꿀 수 있습니다.
               </Text>
             </Card>
           )}
@@ -372,28 +369,6 @@ export function ChatScreen() {
           )}
         </View>
       </ScrollView>
-
-      {/* 자유 질문 입력 (보조) */}
-      <View className="border-t border-line bg-bg-base p-3">
-        <View className="flex-row gap-2">
-          <TextInput
-            value={input}
-            onChangeText={setInput}
-            placeholder="자유 질문을 입력하세요 (예: 庚辰 대운 동안 유리한 분야?)"
-            placeholderTextColor="#6B6357"
-            multiline
-            className="min-h-12 max-h-32 flex-1 rounded-2xl border border-line bg-bg-elevated px-4 py-3 font-sans text-base text-ink"
-            onSubmitEditing={() => consult(input)}
-          />
-          <View className="w-24">
-            <Button
-              label="풀이"
-              onPress={() => consult(input)}
-              loading={chat.isPending}
-            />
-          </View>
-        </View>
-      </View>
     </SafeAreaView>
   );
 }
