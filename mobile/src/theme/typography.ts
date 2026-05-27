@@ -3,9 +3,12 @@
  * 명조(본명조/Noto Serif KR)로 격조·전통, Pretendard로 본문 가독성.
  */
 
+// 웹은 global.css에서 CDN으로 로드. 네이티브는 추후 expo-font 추가 시 동일 키로 등록.
 export const fontFamily = {
-  serif: "NotoSerifKR", // 제목·한자·명리 용어 (명조)
-  sans: "Pretendard", // 본문·UI
+  serif:
+    '"Noto Serif KR", "Apple SD Gothic Neo", "Nanum Myeongjo", Batang, serif',
+  sans:
+    '"Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif',
 } as const;
 
 export const fontSize = {
