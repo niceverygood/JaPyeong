@@ -88,8 +88,23 @@ def _components(pillars: FourPillars, kind: str) -> list[tuple[str, str]]:
     return out
 
 
-def _pos_sort(item: tuple[str, str]) -> int:
-    return _POS_INDEX[item[0].rsplit("_", 1)[0]]
+def _pos_sort(item: tuple[str, str]) -> tuple[str, int]:
+    """정렬 키: (person, position_index). person 없으면 빈 문자열 → 단일 사주 호환.
+
+    label 형식:
+      - 단일: 'year_gan' / 'month_ji' / ...
+      - cross: 'A_year_gan' / 'B_day_ji' / ...
+    """
+    label = item[0]
+    parts = label.split("_")
+    # cross: 첫 토큰이 A/B면 person prefix
+    if parts[0] in ("A", "B"):
+        person = parts[0]
+        pos = parts[1]
+    else:
+        person = ""
+        pos = parts[0]
+    return (person, _POS_INDEX[pos])
 
 
 def _scan_pairs(
@@ -191,6 +206,58 @@ def has_hap(pillars: FourPillars, position: str) -> bool:
         position in r.positions and r.type in _HAP_TYPES
         for r in find_all_relations(pillars)
     )
+
+
+def _cross_components(pillars: FourPillars, person: str, kind: str) -> list[tuple[str, str]]:
+    """(position_label, 글자) 목록. position에 person prefix 붙임 (예: 'A_year_gan')."""
+    out: list[tuple[str, str]] = []
+    for pos in _POSITIONS:
+        pillar = getattr(pillars, pos, None)
+        if pillar is None:
+            continue
+        out.append((f"{person}_{pos}_{kind}", pillar.gan if kind == "gan" else pillar.ji))
+    return out
+
+
+def _is_cross(positions: tuple[str, ...]) -> bool:
+    """positions 가 두 사람(A/B) 사이를 가로지르는지 — A만 또는 B만이면 False."""
+    persons = {p.split("_", 1)[0] for p in positions}
+    return len(persons) > 1
+
+
+def find_cross_relations(
+    pillars_a: FourPillars, pillars_b: FourPillars
+) -> list[Relation]:
+    """두 사주 사이의 cross 관계만 검출 (A↔B). 각자 내부 관계는 제외.
+
+    Relation.positions 의 각 원소는 'A_year_gan' / 'B_day_ji' 등으로 prefix됨.
+    삼합·삼형(3자)·자형은 검출 안 함 — 의미 해석이 두 사람 사이에선 모호하므로
+    2자 관계(합·충·형·해·파)만 집계해 LLM 해석에 넘긴다.
+    """
+    gans_a = _cross_components(pillars_a, "A", "gan")
+    gans_b = _cross_components(pillars_b, "B", "gan")
+    jis_a = _cross_components(pillars_a, "A", "ji")
+    jis_b = _cross_components(pillars_b, "B", "ji")
+
+    out: list[Relation] = []
+    # 천간합 (cross only)
+    out += _scan_pairs(
+        gans_a + gans_b,
+        [(_CHEON_GAN_HAP, RelationType.CHEON_GAN_HAP)],
+    )
+    # 지지 2자 관계 (cross only)
+    out += _scan_pairs(
+        jis_a + jis_b,
+        [
+            (_YUK_HAP, RelationType.JI_JI_YUK_HAP),
+            (_CHUNG, RelationType.JI_JI_CHUNG),
+            (_HAE, RelationType.JI_JI_HAE),
+            (_PA, RelationType.JI_JI_PA),
+            (_SANG_HYEONG, RelationType.JI_JI_HYEONG),
+        ],
+    )
+    # A 또는 B 내부 관계는 필터링
+    return [r for r in out if _is_cross(r.positions)]
 
 
 def detect_hap_hwa(pillars: FourPillars, hap: Relation) -> NoReturn:

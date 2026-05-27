@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import { ChatScreen } from "@/screens/Chat/ChatScreen";
+import { CompatibilityScreen } from "@/screens/Compatibility/CompatibilityScreen";
 import { LandingScreen } from "@/screens/Landing/LandingScreen";
 import { OnboardingScreen } from "@/screens/Onboarding/OnboardingScreen";
 import { SajuScreen } from "@/screens/Saju/SajuScreen";
@@ -29,10 +30,15 @@ export function RootNavigator() {
       <Stack.Screen
         name="Onboarding"
         component={OnboardingScreen}
-        options={{ title: "출생 정보", headerBackTitle: "처음" }}
+        options={{ title: "명식 입력", headerBackTitle: "처음" }}
       />
-      <Stack.Screen name="Saju" component={SajuScreen} options={{ title: "원국 분석" }} />
-      <Stack.Screen name="Chat" component={ChatScreen} options={{ title: "AI 자문" }} />
+      <Stack.Screen name="Saju" component={SajuScreen} options={{ title: "명식 분석" }} />
+      <Stack.Screen name="Chat" component={ChatScreen} options={{ title: "자평 자문" }} />
+      <Stack.Screen
+        name="Compatibility"
+        component={CompatibilityScreen}
+        options={{ title: "궁합" }}
+      />
     </Stack.Navigator>
   );
 }

@@ -16,7 +16,12 @@ from dataclasses import dataclass
 
 import anthropic
 
-from src.ai.prompts import SYSTEM_PROMPT, build_user_message
+from src.ai.prompts import (
+    COMPAT_SYSTEM_PROMPT,
+    SYSTEM_PROMPT,
+    build_compat_user_message,
+    build_user_message,
+)
 
 DEFAULT_MODEL = os.environ.get("ANTHROPIC_MODEL_STANDARD", "claude-sonnet-4-5")
 MAX_TOKENS = 2200  # v2: contested/cautions 다 채우면 길어지므로 여유. 잘림 = JSON 파싱 실패 502
@@ -84,6 +89,88 @@ def consult(natal: dict, question: str, model: str | None = None) -> Consultatio
     if data is None:
         raise RuntimeError(
             f"Claude JSON 파싱 실패({RETRY_ON_PARSE_FAIL + 1}회): {last_err}"
+        )
+
+    citations = tuple(
+        Citation(source=c.get("source", "").strip(), volume=(c.get("volume") or None))
+        for c in (data.get("citations") or [])
+        if isinstance(c, dict) and c.get("source")
+    )
+    cautions = tuple(
+        str(s).strip() for s in (data.get("cautions") or []) if str(s).strip()
+    )[:3]
+    contested = tuple(
+        str(s).strip() for s in (data.get("contested") or []) if str(s).strip()
+    )[:3]
+    confidence = str(data.get("confidence", "medium")).strip().lower()
+    if confidence not in _VALID_CONFIDENCE:
+        confidence = "medium"
+
+    return ConsultationResult(
+        answer=str(data.get("answer", "")).strip(),
+        basis=str(data.get("basis", "")).strip(),
+        perspective=str(data.get("perspective", "")).strip(),
+        timing=str(data.get("timing", "")).strip(),
+        cautions=cautions,
+        citations=citations,
+        contested=contested,
+        confidence=confidence,
+        follow_up_suggestions=tuple(
+            str(s).strip() for s in (data.get("follow_up_suggestions") or []) if str(s).strip()
+        )[:3],
+        model=mdl,
+    )
+
+
+def consult_compatibility(
+    natal_a: dict,
+    natal_b: dict,
+    analysis: dict,
+    relationship_type: str,
+    label_a: str | None = None,
+    label_b: str | None = None,
+    question: str | None = None,
+    model: str | None = None,
+) -> ConsultationResult:
+    """두 사주 + 결정론적 분석 → Claude 궁합 자문 호출.
+
+    응답 스키마는 일반 consult()와 동일(ConsultationResult).
+    """
+    natal_a_json = json.dumps(natal_a, ensure_ascii=False, default=str)
+    natal_b_json = json.dumps(natal_b, ensure_ascii=False, default=str)
+    analysis_json = json.dumps(analysis, ensure_ascii=False, default=str)
+    msg = build_compat_user_message(
+        natal_a_json=natal_a_json,
+        natal_b_json=natal_b_json,
+        analysis_json=analysis_json,
+        relationship_type=relationship_type,
+        label_a=label_a,
+        label_b=label_b,
+        question=question,
+    )
+    mdl = model or DEFAULT_MODEL
+    client = _client()
+
+    data: dict | None = None
+    last_err: Exception | None = None
+    for _ in range(RETRY_ON_PARSE_FAIL + 1):
+        resp = client.messages.create(
+            model=mdl,
+            max_tokens=MAX_TOKENS,
+            temperature=TEMPERATURE,
+            system=COMPAT_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": msg}],
+        )
+        text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+        try:
+            data = _parse_json_lenient(text)
+            break
+        except (json.JSONDecodeError, ValueError) as e:
+            last_err = e
+            continue
+    if data is None:
+        raise RuntimeError(
+            f"Claude 궁합 JSON 파싱 실패({RETRY_ON_PARSE_FAIL + 1}회): {last_err}"
         )
 
     citations = tuple(

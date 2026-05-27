@@ -3,4 +3,5 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Saju: undefined;
   Chat: undefined;
+  Compatibility: undefined;
 };
