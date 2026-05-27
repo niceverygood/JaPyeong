@@ -70,6 +70,21 @@ class YongsinResponse(BaseModel):
     confidence: str
 
 
+class LifeFlowPointResponse(BaseModel):
+    """대운 1주기의 점수와 라벨 (인생 흐름 그래프 데이터)."""
+
+    sequence: int
+    start_age: int
+    end_age: int
+    gan: str
+    ji: str
+    gan_element: str  # 木火土金水
+    ji_element: str
+    score: float  # -5 .. +5
+    label: str  # 대길/길/평/주의/흉
+    reasons: list[str]
+
+
 class NatalResponse(BaseModel):
     """원국 분석 결과."""
 
@@ -83,6 +98,7 @@ class NatalResponse(BaseModel):
     strength: StrengthResponse
     geokguk: GeokgukResponse
     yongsin: YongsinResponse
+    life_flow: list[LifeFlowPointResponse] = []  # 80년치 대운 길흉 그래프 (잠정)
 
 
 class LuckResponse(BaseModel):

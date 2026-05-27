@@ -11,6 +11,7 @@ from src.api.v1.saju_schemas import (
     DaewoonResponse,
     FiveElementsResponse,
     GeokgukResponse,
+    LifeFlowPointResponse,
     LuckResponse,
     NatalResponse,
     RelationResponse,
@@ -19,7 +20,7 @@ from src.api.v1.saju_schemas import (
 )
 from src.engine import five_elements as fe
 from src.engine import geokguk as gk
-from src.engine import jeolgi, sewoon
+from src.engine import jeolgi, life_flow, sewoon
 from src.engine import relations as rel
 from src.engine import strength as st
 from src.engine import yongsin as ys
@@ -52,9 +53,10 @@ def analyze_natal(birth: BirthInfo, policy: MyeongriPolicy | None = None) -> Nat
         RelationResponse(type=r.type.value, members=list(r.members), positions=list(r.positions))
         for r in rel.find_all_relations(pillars)
     ]
+    daewoon_periods = build_daewoon(birth, policy)
     periods = [
         DaewoonPeriodResponse(sequence=p.sequence, start_age=p.start_age, gan=p.gan, ji=p.ji)
-        for p in build_daewoon(birth, policy)
+        for p in daewoon_periods
     ]
     daewoon = DaewoonResponse(
         direction=daewoon_direction(pillars.year.gan, birth.gender),
@@ -93,6 +95,24 @@ def analyze_natal(birth: BirthInfo, policy: MyeongriPolicy | None = None) -> Nat
     )
     _ = TEN_GOD_HANJA  # 추후 한자 병기에 사용
 
+    # 인생 흐름 — 대운별 점수 (잠정)
+    flow_points = life_flow.build_life_flow(pillars, daewoon_periods, yong)
+    flow_dto = [
+        LifeFlowPointResponse(
+            sequence=p.sequence,
+            start_age=p.start_age,
+            end_age=p.end_age,
+            gan=p.gan,
+            ji=p.ji,
+            gan_element=p.gan_element,
+            ji_element=p.ji_element,
+            score=p.score,
+            label=p.label,
+            reasons=list(p.reasons),
+        )
+        for p in flow_points
+    ]
+
     return NatalResponse(
         pillars=pillars,
         day_master=day_master,
@@ -104,6 +124,7 @@ def analyze_natal(birth: BirthInfo, policy: MyeongriPolicy | None = None) -> Nat
         strength=strength_dto,
         geokguk=geokguk_dto,
         yongsin=yongsin_dto,
+        life_flow=flow_dto,
     )
 
 

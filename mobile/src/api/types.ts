@@ -103,6 +103,19 @@ export interface Yongsin {
   confidence: string;
 }
 
+export interface LifeFlowPoint {
+  sequence: number;
+  start_age: number;
+  end_age: number;
+  gan: string;
+  ji: string;
+  gan_element: string; // 木火土金水
+  ji_element: string;
+  score: number; // -5..+5
+  label: string; // 대길/길/평/주의/흉
+  reasons: string[];
+}
+
 export interface NatalResponse {
   pillars: FourPillars;
   day_master: string;
@@ -114,6 +127,7 @@ export interface NatalResponse {
   strength: Strength;
   geokguk: Geokguk;
   yongsin: Yongsin;
+  life_flow: LifeFlowPoint[];
 }
 
 export interface LuckResponse {

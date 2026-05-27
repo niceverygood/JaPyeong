@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAnalyzeSaju } from "@/api/saju";
 import type { TenGodsCount } from "@/api/types";
 import { DaewoonList } from "@/components/domain/DaewoonList";
+import { LifeFlowGraph } from "@/components/domain/LifeFlowGraph";
 import { OhaengChart } from "@/components/domain/OhaengChart";
 import { MiniSajuStrip, SajuGrid } from "@/components/domain/SajuGrid";
 import { Button } from "@/components/primitives/Button";
@@ -172,6 +173,23 @@ export function SajuScreen() {
                 <DaewoonList daewoon={data.daewoon} />
               </Card>
 
+              {/* 인생 흐름 그래프 — 잠정 */}
+              {data.life_flow.length > 0 && (
+                <Card>
+                  <View className="mb-3 flex-row items-center justify-between">
+                    <Text className="font-serif text-lg text-gold-light">
+                      인생 흐름 (人生流)
+                    </Text>
+                    <View className="rounded-md border border-accent-brown bg-bg-card px-2 py-0.5">
+                      <Text className="font-sans text-[10px] text-accent-clay">
+                        잠정 · 자문위원 검증 전
+                      </Text>
+                    </View>
+                  </View>
+                  <LifeFlowGraph points={data.life_flow} />
+                </Card>
+              )}
+
               <Card>
                 <View className="mb-3 flex-row items-center justify-between">
                   <Text className="font-serif text-lg text-gold-light">강약·격국·용신</Text>
@@ -222,6 +240,16 @@ export function SajuScreen() {
                   label="궁합 보기 (두 사주 비교)"
                   variant="ghost"
                   onPress={() => navigation.navigate("Compatibility")}
+                />
+                <Button
+                  label="택일 (좋은 날 찾기)"
+                  variant="ghost"
+                  onPress={() => navigation.navigate("DateSelection")}
+                />
+                <Button
+                  label="결정 도우미 (A vs B)"
+                  variant="ghost"
+                  onPress={() => navigation.navigate("Decision")}
                 />
               </View>
             </>

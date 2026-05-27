@@ -2,6 +2,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import { ChatScreen } from "@/screens/Chat/ChatScreen";
 import { CompatibilityScreen } from "@/screens/Compatibility/CompatibilityScreen";
+import { DateSelectionScreen } from "@/screens/DateSelection/DateSelectionScreen";
+import { DecisionScreen } from "@/screens/Decision/DecisionScreen";
 import { LandingScreen } from "@/screens/Landing/LandingScreen";
 import { OnboardingScreen } from "@/screens/Onboarding/OnboardingScreen";
 import { SajuScreen } from "@/screens/Saju/SajuScreen";
@@ -38,6 +40,16 @@ export function RootNavigator() {
         name="Compatibility"
         component={CompatibilityScreen}
         options={{ title: "궁합" }}
+      />
+      <Stack.Screen
+        name="DateSelection"
+        component={DateSelectionScreen}
+        options={{ title: "택일" }}
+      />
+      <Stack.Screen
+        name="Decision"
+        component={DecisionScreen}
+        options={{ title: "결정 도우미" }}
       />
     </Stack.Navigator>
   );

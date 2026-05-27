@@ -18,8 +18,10 @@ import anthropic
 
 from src.ai.prompts import (
     COMPAT_SYSTEM_PROMPT,
+    DECISION_SYSTEM_PROMPT,
     SYSTEM_PROMPT,
     build_compat_user_message,
+    build_decision_user_message,
     build_user_message,
 )
 
@@ -107,6 +109,113 @@ def consult(natal: dict, question: str, model: str | None = None) -> Consultatio
         confidence = "medium"
 
     return ConsultationResult(
+        answer=str(data.get("answer", "")).strip(),
+        basis=str(data.get("basis", "")).strip(),
+        perspective=str(data.get("perspective", "")).strip(),
+        timing=str(data.get("timing", "")).strip(),
+        cautions=cautions,
+        citations=citations,
+        contested=contested,
+        confidence=confidence,
+        follow_up_suggestions=tuple(
+            str(s).strip() for s in (data.get("follow_up_suggestions") or []) if str(s).strip()
+        )[:3],
+        model=mdl,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionResult:
+    """결정 도우미 A/B 응답."""
+
+    option_a_view: str
+    option_b_view: str
+    comparison: str
+    lean: str  # "A" | "B" | "balanced"
+    lean_reason: str
+    answer: str
+    basis: str
+    perspective: str
+    timing: str
+    cautions: tuple[str, ...]
+    citations: tuple[Citation, ...]
+    contested: tuple[str, ...]
+    confidence: str
+    follow_up_suggestions: tuple[str, ...]
+    model: str
+
+
+_VALID_LEAN = {"A", "B", "balanced"}
+
+
+def consult_decision(
+    natal: dict,
+    option_a_title: str,
+    option_a_desc: str,
+    option_b_title: str,
+    option_b_desc: str,
+    context: str | None = None,
+    model: str | None = None,
+) -> DecisionResult:
+    """사주 + 두 선택지 → Claude 결정 도우미 자문."""
+    natal_json = json.dumps(natal, ensure_ascii=False, default=str)
+    msg = build_decision_user_message(
+        natal_json=natal_json,
+        option_a_title=option_a_title,
+        option_a_desc=option_a_desc,
+        option_b_title=option_b_title,
+        option_b_desc=option_b_desc,
+        context=context,
+    )
+    mdl = model or DEFAULT_MODEL
+    client = _client()
+
+    data: dict | None = None
+    last_err: Exception | None = None
+    for _ in range(RETRY_ON_PARSE_FAIL + 1):
+        resp = client.messages.create(
+            model=mdl,
+            max_tokens=MAX_TOKENS,
+            temperature=TEMPERATURE,
+            system=DECISION_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": msg}],
+        )
+        text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+        try:
+            data = _parse_json_lenient(text)
+            break
+        except (json.JSONDecodeError, ValueError) as e:
+            last_err = e
+            continue
+    if data is None:
+        raise RuntimeError(
+            f"Claude 결정 JSON 파싱 실패({RETRY_ON_PARSE_FAIL + 1}회): {last_err}"
+        )
+
+    citations = tuple(
+        Citation(source=c.get("source", "").strip(), volume=(c.get("volume") or None))
+        for c in (data.get("citations") or [])
+        if isinstance(c, dict) and c.get("source")
+    )
+    cautions = tuple(
+        str(s).strip() for s in (data.get("cautions") or []) if str(s).strip()
+    )[:3]
+    contested = tuple(
+        str(s).strip() for s in (data.get("contested") or []) if str(s).strip()
+    )[:3]
+    confidence = str(data.get("confidence", "medium")).strip().lower()
+    if confidence not in _VALID_CONFIDENCE:
+        confidence = "medium"
+    lean = str(data.get("lean", "balanced")).strip()
+    if lean not in _VALID_LEAN:
+        lean = "balanced"
+
+    return DecisionResult(
+        option_a_view=str(data.get("option_a_view", "")).strip(),
+        option_b_view=str(data.get("option_b_view", "")).strip(),
+        comparison=str(data.get("comparison", "")).strip(),
+        lean=lean,
+        lean_reason=str(data.get("lean_reason", "")).strip(),
         answer=str(data.get("answer", "")).strip(),
         basis=str(data.get("basis", "")).strip(),
         perspective=str(data.get("perspective", "")).strip(),

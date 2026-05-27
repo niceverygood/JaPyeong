@@ -117,14 +117,28 @@ export function LandingScreen() {
           <View className="mt-10">
             <Button label="명식 입력하기" onPress={() => navigation.navigate("Onboarding")} />
 
-            {/* 부가 진입: 궁합 */}
-            <View className="mt-3">
+            {/* 부가 진입 — 3종 */}
+            <View className="mt-3 gap-2">
               <Pressable
                 onPress={() => navigation.navigate("Compatibility")}
                 className="flex-row items-center justify-center gap-2 rounded-lg border border-line bg-bg-card py-3 active:opacity-80"
               >
                 <Text className="font-serif text-lg text-gold-light">宮合</Text>
                 <Text className="font-sans text-sm text-ink-secondary">두 사주 궁합 보기</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => navigation.navigate("DateSelection")}
+                className="flex-row items-center justify-center gap-2 rounded-lg border border-line bg-bg-card py-3 active:opacity-80"
+              >
+                <Text className="font-serif text-lg text-gold-light">擇日</Text>
+                <Text className="font-sans text-sm text-ink-secondary">택일 · 좋은 날 찾기</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => navigation.navigate("Decision")}
+                className="flex-row items-center justify-center gap-2 rounded-lg border border-line bg-bg-card py-3 active:opacity-80"
+              >
+                <Text className="font-serif text-lg text-gold-light">決</Text>
+                <Text className="font-sans text-sm text-ink-secondary">결정 도우미 · A vs B</Text>
               </Pressable>
             </View>
 

@@ -4,4 +4,6 @@ export type RootStackParamList = {
   Saju: undefined;
   Chat: undefined;
   Compatibility: undefined;
+  DateSelection: undefined;
+  Decision: undefined;
 };
