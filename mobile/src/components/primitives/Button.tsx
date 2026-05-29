@@ -1,5 +1,7 @@
 import { ActivityIndicator, Pressable, Text } from "react-native";
 
+import { colors } from "@/theme";
+
 interface ButtonProps {
   label: string;
   onPress: () => void;
@@ -17,11 +19,11 @@ export function Button({
 }: ButtonProps) {
   const isDisabled = disabled || loading;
   const base =
-    "h-14 items-center justify-center rounded-2xl px-6 active:opacity-80";
+    "h-14 items-center justify-center rounded-lg px-6 active:opacity-80";
   const styles =
     variant === "primary"
-      ? "bg-gold"
-      : "border border-gold bg-transparent";
+      ? "border border-gold bg-gold"
+      : "border border-lineStrong bg-bg-raised";
   const textStyle = variant === "primary" ? "text-bg-base" : "text-gold";
 
   return (
@@ -31,7 +33,7 @@ export function Button({
       className={`${base} ${styles} ${isDisabled ? "opacity-50" : ""}`}
     >
       {loading ? (
-        <ActivityIndicator color="#0F1419" />
+        <ActivityIndicator color={colors.bg.base} />
       ) : (
         <Text className={`font-sans text-base font-semibold ${textStyle}`}>
           {label}

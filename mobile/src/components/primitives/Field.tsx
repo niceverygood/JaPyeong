@@ -1,5 +1,7 @@
 import { Text, TextInput, View } from "react-native";
 
+import { colors } from "@/theme";
+
 interface FieldProps {
   label: string;
   value: string;
@@ -22,9 +24,9 @@ export function Field({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#6B6357"
+        placeholderTextColor={colors.text.faint}
         keyboardType={keyboardType}
-        className="h-12 rounded-xl border border-line bg-bg-elevated px-4 font-sans text-base text-ink"
+        className="h-12 rounded-lg border border-line bg-bg-card px-4 font-sans text-base text-ink"
       />
     </View>
   );

@@ -14,14 +14,14 @@ const ROWS: { key: keyof FiveElements; label: string; color: string }[] = [
 export function OhaengChart({ five }: { five: FiveElements }) {
   const max = Math.max(five.mok, five.hwa, five.to, five.geum, five.su, 1);
   return (
-    <View>
+    <View className="gap-3">
       {ROWS.map((r) => {
         const value = five[r.key] as number;
         const pct = Math.round((value / max) * 100);
         return (
-          <View key={r.key} className="mb-3 flex-row items-center">
-            <Text className="w-14 font-serif text-sm text-ink">{r.label}</Text>
-            <View className="mx-2 h-3 flex-1 overflow-hidden rounded-full bg-bg-card">
+          <View key={r.key} className="flex-row items-center">
+            <Text className="w-14 font-serif text-sm text-ink-secondary">{r.label}</Text>
+            <View className="mx-2 h-2.5 flex-1 overflow-hidden rounded-full bg-bg-card">
               <View
                 style={{ width: `${pct}%`, backgroundColor: r.color }}
                 className="h-full rounded-full"
