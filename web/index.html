@@ -342,6 +342,23 @@
   .price-foot { font-family: var(--myeongjo); font-size: 14px; color: var(--text-2); text-align: center; margin-top: 36px; }
   .price-foot .em { color: var(--gold); }
 
+  /* Pricing block headers + 2-col grid + annual */
+  .pricing-block-head { text-align: center; margin: 28px auto 22px; max-width: 720px; }
+  .pricing-block-title { font-family: var(--myeongjo); font-size: 22px; font-weight: 700; color: var(--text); margin: 0 0 6px; letter-spacing: -0.01em; }
+  .pricing-block-sub { font-size: 14px; color: var(--text-2); margin: 0; line-height: 1.6; }
+  .pricing-grid--two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; max-width: 720px; margin: 0 auto; }
+  @media (max-width: 760px) { .pricing-grid--two { grid-template-columns: 1fr; max-width: 480px; } }
+  .price-card.tm { border-color: rgba(201,169,97,0.35); }
+  .price-card.tm.featured { border-color: var(--gold); background: linear-gradient(180deg, rgba(201,169,97,0.07), var(--surface) 60%); }
+  .price-amount .month-eq { font-size: 12px; color: var(--text-mut); margin-left: 6px; }
+  .price-feat li.highlight { color: var(--gold); font-weight: 600; }
+  .price-feat li.highlight svg { color: var(--gold); }
+  .tm-callout { margin: 14px 0 0; padding: 10px 12px; background: rgba(201,169,97,0.06); border: 1px solid rgba(201,169,97,0.18); border-radius: 8px; font-size: 12.5px; color: var(--text-2); line-height: 1.55; }
+  .tm-contact-bar { margin-top: 32px; padding: 20px 24px; background: var(--surface); border: 1px solid var(--b-subtle); border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .tm-contact-bar .tm-contact-text { font-size: 14px; color: var(--text-2); line-height: 1.6; }
+  .tm-contact-bar .tm-contact-text strong { color: var(--text); font-family: var(--myeongjo); }
+  .pricing-block-divider { border: 0; border-top: 1px solid var(--b-subtle); margin: 56px auto 0; max-width: 880px; }
+
   /* Advisor section */
   .advisor-card {
     border: 1px solid var(--b-subtle);
@@ -751,61 +768,122 @@
   <div class="wrap">
     <div class="section-head center reveal">
       <div class="eyebrow center">禮 · 이용 요금</div>
-      <h2 class="h-section" style="margin-top:18px">세 가지 요금제를<br/>준비하고 있습니다</h2>
-      <p class="h-sub" style="margin-left:auto;margin-right:auto;">지금 바로 자평의 명리 자문을 시작할 수 있습니다. 결제·해지는 언제든 가능합니다.</p>
+      <h2 class="h-section" style="margin-top:18px">두 가지 길로<br/>자평을 만나실 수 있습니다</h2>
+      <p class="h-sub" style="margin-left:auto;margin-right:auto;">앱에서 직접 시작하시거나, 자문위원이 함께하는 연간 패키지로 더 깊이 들어가실 수 있습니다.</p>
     </div>
 
-    <div class="pricing-grid">
+    <!-- ── 그룹 1 · 앱 월간 구독 ─────────────────────────────── -->
+    <div class="pricing-block-head reveal">
+      <h3 class="pricing-block-title">앱 월간 구독</h3>
+      <p class="pricing-block-sub">스스로 명식을 입력하고 자평의 AI 자문을 사용합니다. 결제·해지 언제든 가능.</p>
+    </div>
 
-      <div class="price-card reveal" data-plan-card="standard">
-        <div class="price-tier">Standard · 표준</div>
-        <div class="price-name">基<span class="read">기 · 시작하는 분</span></div>
+    <div class="pricing-grid pricing-grid--two">
+      <div class="price-card reveal" data-plan-card="basic">
+        <div class="price-tier">Basic · 기본</div>
+        <div class="price-name">基<span class="read">기 · 시작</span></div>
         <div class="price-amount"><span class="num">9,900</span><span class="unit">원 / 월</span></div>
         <div class="price-note">월 구독, 언제든 해지</div>
         <hr class="price-line"/>
         <ul class="price-feat">
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>AI 자문 무제한 대화</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>원국<span class="hj-read">原局</span> 분석 + 월운</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>고전 출처 인용 표시</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>대화 기록 6개월 보관</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>명식<span class="hj-read">命式</span> 분석 + 인생 흐름 그래프</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>12 카테고리 AI 자문 월 5회</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>궁합<span class="hj-read">宮合</span> 월 1회</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>고전 출처 인용 + 학파별 견해</li>
         </ul>
-        <a href="/app/?plan=standard" class="btn btn-secondary btn-block">이 요금제로 시작하기</a>
+        <a href="/app/?plan=basic" class="btn btn-secondary btn-block">이 요금제로 시작하기</a>
       </div>
 
-      <div class="price-card featured reveal" data-plan-card="premium">
+      <div class="price-card featured reveal" data-plan-card="full">
         <div class="price-badge">추 천 · 推 薦</div>
-        <div class="price-tier">Premium · 심화</div>
+        <div class="price-tier">Full · 풀</div>
         <div class="price-name">深<span class="read">심 · 더 깊이</span></div>
         <div class="price-amount"><span class="num">29,900</span><span class="unit">원 / 월</span></div>
         <div class="price-note">월 구독, 언제든 해지</div>
         <hr class="price-line"/>
         <ul class="price-feat">
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>Standard 전체 포함</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>월간 심층 리포트 (PDF)</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>Basic 전체 포함</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>AI 자문·궁합·결정 도우미 <strong>무제한</strong></li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>택일<span class="hj-read">擇日</span> (좋은 날 찾기)</li>
           <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>가족 사주 5명까지 등록</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>대화 기록 무기한 보관</li>
         </ul>
-        <a href="/app/?plan=premium" class="btn btn-primary btn-block">이 요금제로 시작하기</a>
+        <a href="/app/?plan=full" class="btn btn-primary btn-block">이 요금제로 시작하기</a>
       </div>
+    </div>
 
-      <div class="price-card reveal" data-plan-card="pro">
-        <div class="price-tier">Pro · 단건</div>
-        <div class="price-name">命<span class="read">명 · 인생 리포트</span></div>
-        <div class="price-amount"><span class="num">99,000</span><span class="unit">원 / 1회</span></div>
-        <div class="price-note">단건 결제, 구독 아님</div>
+    <hr class="pricing-block-divider"/>
+
+    <!-- ── 그룹 2 · 연간 패키지 (자문위원 포함) ──────────────── -->
+    <div class="pricing-block-head reveal">
+      <h3 class="pricing-block-title">연간 패키지 — 자문위원<span class="hj-read">諮問委員</span> 포함</h3>
+      <p class="pricing-block-sub">명리 자문위원의 1:1 검증과 분기별 종합 리포트가 포함됩니다. 결제 후 7일 청약철회 가능.</p>
+    </div>
+
+    <div class="pricing-grid">
+
+      <div class="price-card tm reveal" data-plan-card="annual-standard">
+        <div class="price-tier">Annual · 표준</div>
+        <div class="price-name">禮<span class="read">예 · 한 해의 자문</span></div>
+        <div class="price-amount">
+          <span class="num">390,000</span><span class="unit">원 / 년</span>
+        </div>
+        <div class="price-note"><span class="month-eq">월 환산 32,500원</span></div>
         <hr class="price-line"/>
         <ul class="price-feat">
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>인생 종합 리포트 (약 40쪽)</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>대운 10년 단위 흐름 해석</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>격국·용신·희신 종합 진단</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>PDF·인쇄본 보존</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>앱 Full 전체 기능 1년 무제한</li>
+          <li class="highlight"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>분기별 종합 리포트 PDF · 연 4회</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>대운<span class="hj-read">大運</span> 80년 인생 흐름 풀이</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>대화·리포트 영구 보관</li>
         </ul>
-        <a href="/app/?plan=pro" class="btn btn-secondary btn-block">이 요금제로 시작하기</a>
+        <a href="tel:1577-0000" class="btn btn-secondary btn-block">전화로 상담 신청</a>
+      </div>
+
+      <div class="price-card tm featured reveal" data-plan-card="annual-premium">
+        <div class="price-badge">추 천 · 推 薦</div>
+        <div class="price-tier">Annual · 프리미엄</div>
+        <div class="price-name">深<span class="read">심 · 자문위원 동행</span></div>
+        <div class="price-amount">
+          <span class="num">890,000</span><span class="unit">원 / 년</span>
+        </div>
+        <div class="price-note"><span class="month-eq">월 환산 74,000원</span></div>
+        <hr class="price-line"/>
+        <ul class="price-feat">
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>표준 패키지 전체 포함</li>
+          <li class="highlight"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>자문위원 1:1 전화 상담 연 2회 (회당 30분)</li>
+          <li class="highlight"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>주요 결정 검증 답변 · 학파 교차 검토</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>분기별 보고서 인쇄본 발송</li>
+        </ul>
+        <a href="tel:1577-0000" class="btn btn-primary btn-block">전화로 상담 신청</a>
+      </div>
+
+      <div class="price-card tm reveal" data-plan-card="annual-vip">
+        <div class="price-tier">Annual · VIP</div>
+        <div class="price-name">命<span class="read">명 · 가족·평생</span></div>
+        <div class="price-amount">
+          <span class="num">1,800,000</span><span class="unit">원 / 년</span>
+        </div>
+        <div class="price-note"><span class="month-eq">월 환산 150,000원</span></div>
+        <hr class="price-line"/>
+        <ul class="price-feat">
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>프리미엄 패키지 전체 포함</li>
+          <li class="highlight"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>자문위원 분기별 1:1 상담 (연 4회)</li>
+          <li class="highlight"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>가족 3인 사주 동시 관리 + 가족 합 분석</li>
+          <li class="highlight"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>택일 컨설팅 무제한 (결혼·이사·계약)</li>
+        </ul>
+        <a href="tel:1577-0000" class="btn btn-secondary btn-block">전화로 상담 신청</a>
       </div>
 
     </div>
 
-    <p class="price-foot reveal">오프라인 명리 상담 <span class="em">1회 비용</span>으로, <span class="em">1년</span>의 자문.</p>
+    <div class="tm-contact-bar reveal">
+      <div class="tm-contact-text">
+        <strong>연간 패키지 안내</strong> · 자문위원이 함께하는 1:1 자문은 전화 상담으로만 신청 가능합니다.<br/>
+        평일 10–18시 · <strong>1577-0000</strong> · <a href="mailto:advisor@japyeong.kr" style="color:var(--gold)">advisor@japyeong.kr</a>
+      </div>
+      <a href="tel:1577-0000" class="btn btn-primary">상담 신청 전화</a>
+    </div>
+
+    <p class="price-foot reveal" style="margin-top: 36px">오프라인 명리 상담 <span class="em">1회 비용</span>으로, <span class="em">1년</span>의 자문.</p>
   </div>
 </section>
 
