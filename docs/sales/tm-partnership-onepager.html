@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>자평 × TM 파트너십 1페이지 요약</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700;900&display=swap');
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css');
+
+  :root {
+    --bg: #0E0F13;
+    --surface: #15171E;
+    --surface-2: #1B1E27;
+    --gold: #C9A961;
+    --gold-dim: #8C7838;
+    --text: #ECECEF;
+    --text-2: #B7B8C0;
+    --text-mut: #80828D;
+    --line: #2A2E3A;
+    --line-strong: #3A3F4F;
+    --ok: #6CB58A;
+    --warn: #E0A858;
+    --bad: #D45D5D;
+    --sans: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", system-ui, sans-serif;
+    --myeongjo: "Noto Serif KR", "Apple SD Gothic Neo", "Nanum Myeongjo", Batang, serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #07080B; color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+
+  /* A4 297mm × 210mm 가로형은 너무 길음. 세로 A4 사용. 화면에선 가운데 정렬. */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 14mm 13mm 12mm;
+    margin: 24px auto;
+    background: var(--bg);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.45);
+    border: 1px solid var(--line);
+    position: relative;
+  }
+
+  /* Header */
+  .header { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 14px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+  .brand { display: flex; align-items: baseline; gap: 12px; }
+  .brand .hanja { font-family: var(--myeongjo); font-size: 32px; font-weight: 900; letter-spacing: -0.02em; color: var(--text); }
+  .brand .hanja .gold { color: var(--gold); }
+  .brand .han { font-size: 11px; color: var(--text-mut); letter-spacing: 0.32em; }
+  .header .right { text-align: right; }
+  .header .right .label { font-size: 10px; letter-spacing: 0.32em; color: var(--gold); font-family: var(--myeongjo); }
+  .header .right .doc-title { font-size: 14px; color: var(--text-2); margin-top: 4px; }
+
+  /* Pitch headline */
+  .pitch { text-align: center; padding: 8px 0 16px; }
+  .pitch .eyebrow { font-size: 10px; letter-spacing: 0.42em; color: var(--gold); font-family: var(--myeongjo); }
+  .pitch h1 { font-family: var(--myeongjo); font-size: 28px; font-weight: 700; line-height: 1.3; color: var(--text); margin: 10px 0 6px; letter-spacing: -0.015em; }
+  .pitch h1 .gold { color: var(--gold); }
+  .pitch .sub { font-size: 13px; color: var(--text-2); line-height: 1.6; }
+
+  /* Numbers row */
+  .numbers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0 18px; }
+  .num-card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 10px; text-align: center; }
+  .num-card .k { font-size: 10px; letter-spacing: 0.22em; color: var(--text-mut); font-family: var(--myeongjo); margin-bottom: 6px; }
+  .num-card .v { font-family: var(--myeongjo); font-size: 19px; font-weight: 700; color: var(--gold); line-height: 1.15; }
+  .num-card .sv { font-size: 10px; color: var(--text-mut); margin-top: 4px; line-height: 1.4; }
+
+  /* Section heading */
+  .h2 { font-family: var(--myeongjo); font-size: 15px; font-weight: 700; color: var(--text); margin: 18px 0 10px; padding-left: 10px; border-left: 3px solid var(--gold); letter-spacing: -0.005em; }
+
+  /* 3-tier table */
+  .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .tier { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 12px 14px; }
+  .tier.featured { border-color: var(--gold); background: linear-gradient(180deg, rgba(201,169,97,0.07), var(--surface) 60%); }
+  .tier .name { font-family: var(--myeongjo); font-size: 12px; letter-spacing: 0.24em; color: var(--gold); margin-bottom: 6px; }
+  .tier .price { font-family: var(--myeongjo); font-size: 21px; font-weight: 700; color: var(--text); line-height: 1.2; }
+  .tier .price .unit { font-size: 11px; color: var(--text-mut); margin-left: 3px; font-weight: 400; }
+  .tier .month-eq { font-size: 10px; color: var(--text-mut); margin-bottom: 10px; }
+  .tier .feat { font-size: 11.5px; color: var(--text-2); line-height: 1.6; padding-left: 12px; margin: 0; }
+  .tier .feat li { margin: 2px 0; }
+  .tier .commission { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 11px; color: var(--gold); }
+  .tier .commission b { font-weight: 700; }
+
+  /* Two-col responsibility */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .col { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+  .col .ttl { font-family: var(--myeongjo); font-size: 12px; color: var(--gold); margin-bottom: 8px; letter-spacing: 0.16em; }
+  .col ul { margin: 0; padding-left: 16px; font-size: 11.5px; color: var(--text-2); line-height: 1.7; }
+
+  /* Margin math box */
+  .math { background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px; padding: 12px 14px; margin: 10px 0 0; }
+  .math .row { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; color: var(--text-2); }
+  .math .row.total { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 8px; font-weight: 700; color: var(--gold); font-family: var(--myeongjo); font-size: 14px; }
+  .math .row .val { font-family: var(--myeongjo); }
+
+  /* Why bullets */
+  .why { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
+  .why-card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 11px; }
+  .why-card .glyph { font-family: var(--myeongjo); font-size: 18px; color: var(--gold); margin-bottom: 4px; }
+  .why-card .t { font-size: 11.5px; font-weight: 600; color: var(--text); margin-bottom: 3px; line-height: 1.35; }
+  .why-card .d { font-size: 10.5px; color: var(--text-mut); line-height: 1.5; }
+
+  /* CTA footer */
+  .cta { margin-top: 16px; padding: 14px 16px; background: linear-gradient(180deg, rgba(201,169,97,0.10), rgba(201,169,97,0.03)); border: 1px solid var(--gold-dim); border-radius: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .cta .left { font-size: 12px; color: var(--text); line-height: 1.65; }
+  .cta .left b { color: var(--gold); font-family: var(--myeongjo); font-size: 14px; }
+  .cta .right { text-align: right; font-size: 11px; color: var(--text-2); white-space: nowrap; line-height: 1.65; }
+  .cta .right .phone { font-family: var(--myeongjo); font-size: 16px; color: var(--gold); font-weight: 700; }
+
+  /* Footer meta */
+  .meta { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-mut); margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--line); letter-spacing: 0.06em; }
+
+  /* Print */
+  @media print {
+    html, body { background: white; }
+    .page { box-shadow: none; margin: 0; border: 0; width: 210mm; min-height: 297mm; }
+    @page { size: A4; margin: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="brand">
+      <div class="hanja">子<span class="gold">平</span></div>
+      <div class="han">자 평 · J A P Y E O N G</div>
+    </div>
+    <div class="right">
+      <div class="label">CONFIDENTIAL · PARTNERSHIP</div>
+      <div class="doc-title">TM 파트너십 1페이지 요약 — 2026</div>
+    </div>
+  </div>
+
+  <!-- Pitch -->
+  <div class="pitch">
+    <div class="eyebrow">禮 · 텔레마케팅 채널 파트너 제안</div>
+    <h1>1년 평생 자문 <span class="gold">39만 ~ 180만 원</span>.<br/>건당 마진 <span class="gold">10~14만 원</span>의 TM 친화 상품.</h1>
+    <div class="sub">자평은 결정론 명리 엔진 + AI + 명리 자문위원의 3층 구조. 단가·갱신·정통성 모두 TM 채널과 정확히 맞물립니다.</div>
+  </div>
+
+  <!-- Numbers -->
+  <div class="numbers">
+    <div class="num-card">
+      <div class="k">한국 사주 시장</div>
+      <div class="v">연 4조</div>
+      <div class="sv">디지털 비중 5% 미만</div>
+    </div>
+    <div class="num-card">
+      <div class="k">평균 명리원 1회</div>
+      <div class="v">10~15만</div>
+      <div class="sv">자평 1년 = 명리원 3~5회</div>
+    </div>
+    <div class="num-card">
+      <div class="k">프리미엄 단가</div>
+      <div class="v">89만 / 년</div>
+      <div class="sv">월 환산 7.4만</div>
+    </div>
+    <div class="num-card">
+      <div class="k">건당 TM 수수료</div>
+      <div class="v">~ 27만</div>
+      <div class="sv">계약가 20~30%</div>
+    </div>
+  </div>
+
+  <!-- 3 tiers -->
+  <div class="h2">상품 — 연간 패키지 3티어 (TM 클로징 대상)</div>
+  <div class="tiers">
+    <div class="tier">
+      <div class="name">ANNUAL · 표준</div>
+      <div class="price">39<span style="font-size:14px">0,000</span><span class="unit">원/년</span></div>
+      <div class="month-eq">월 환산 32,500원</div>
+      <ul class="feat">
+        <li>앱 풀 기능 1년 무제한</li>
+        <li>분기 종합 PDF 리포트 4건</li>
+        <li>대운 80년 인생 흐름 풀이</li>
+      </ul>
+      <div class="commission">TM 수수료(20%): <b>78,000원</b></div>
+    </div>
+    <div class="tier featured">
+      <div class="name">ANNUAL · 프리미엄 ★</div>
+      <div class="price">89<span style="font-size:14px">0,000</span><span class="unit">원/년</span></div>
+      <div class="month-eq">월 환산 74,000원</div>
+      <ul class="feat">
+        <li>표준 전체 포함</li>
+        <li>자문위원 1:1 전화 상담 연 2회</li>
+        <li>주요 결정 학파 교차 검토</li>
+      </ul>
+      <div class="commission">TM 수수료(25%): <b>222,500원</b></div>
+    </div>
+    <div class="tier">
+      <div class="name">ANNUAL · VIP</div>
+      <div class="price">1,80<span style="font-size:14px">0,000</span><span class="unit">원/년</span></div>
+      <div class="month-eq">월 환산 150,000원</div>
+      <ul class="feat">
+        <li>프리미엄 전체 포함</li>
+        <li>자문위원 분기 1:1 (연 4회)</li>
+        <li>가족 3인 + 택일 무제한</li>
+      </ul>
+      <div class="commission">TM 수수료(30%): <b>540,000원</b></div>
+    </div>
+  </div>
+
+  <!-- Why TM -->
+  <div class="h2">왜 TM 채널과 맞나</div>
+  <div class="why">
+    <div class="why-card">
+      <div class="glyph">利</div>
+      <div class="t">단가가 높다</div>
+      <div class="d">건당 마진이 알뜰폰의 10배, 보험 부가특약의 2~3배.</div>
+    </div>
+    <div class="why-card">
+      <div class="glyph">話</div>
+      <div class="t">콜이 먹힌다</div>
+      <div class="d">"요즘 결정하기 어려운 일?" — 거의 모두 예. 자문위원 1:1이 클로징 카드.</div>
+    </div>
+    <div class="why-card">
+      <div class="glyph">續</div>
+      <div class="t">갱신·LTV 강함</div>
+      <div class="d">결정 시점마다 다시 본다. 가족·자녀 사주 추가 업셀.</div>
+    </div>
+    <div class="why-card">
+      <div class="glyph">守</div>
+      <div class="t">법적 리스크 낮음</div>
+      <div class="d">약관·환불·CS·법무 자평 100% 처리. TM은 콜만.</div>
+    </div>
+  </div>
+
+  <!-- 책임 분리 -->
+  <div class="h2">책임 분리 — TM이 콜에만 집중</div>
+  <div class="cols">
+    <div class="col">
+      <div class="ttl">자평이 책임</div>
+      <ul>
+        <li>제품 (앱·자문위원·서버)</li>
+        <li>결제 (PortOne·KG)</li>
+        <li>약관·환불·CS·법무</li>
+        <li>표시광고법 사전 검수 멘트 공급</li>
+        <li>완성된 TM 스크립트·교육 (4+6시간 무상)</li>
+        <li>CRM 대시보드·마케팅 자료·리드</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="ttl">TM이 책임</div>
+      <ul>
+        <li>콜센터 운영 (상담사·DB·녹취)</li>
+        <li>자평 지정 멘트 준수</li>
+        <li>녹취 5년 보관</li>
+        <li>1차 응대 (가입자 콜백)</li>
+        <li>주 1회 KPI 보고</li>
+        <li>통신판매업 신고 (필수)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 산수 -->
+  <div class="h2">월 100건 가입 시 — 대행사 수익 시뮬레이션</div>
+  <div class="math">
+    <div class="row"><span>표준 50건 (390,000 × 20%)</span><span class="val">+ 3,900,000원</span></div>
+    <div class="row"><span>프리미엄 40건 (890,000 × 25%)</span><span class="val">+ 8,900,000원</span></div>
+    <div class="row"><span>VIP 10건 (1,800,000 × 30%)</span><span class="val">+ 5,400,000원</span></div>
+    <div class="row"><span>콜센터 운영비 (콘택트 20:1, 5,000원)</span><span class="val">- 10,000,000원</span></div>
+    <div class="row"><span>청약철회 차감 (15% 가정)</span><span class="val">- 2,730,000원</span></div>
+    <div class="row total"><span>월 순마진</span><span class="val">+ 5,470,000원</span></div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta">
+    <div class="left">
+      <b>다음 단계</b><br/>
+      ① NDA 체결 → ② 자평 데모 미팅 (1주 내) → ③ 파일럿 MoU (5명 / 1개월) → ④ 본 계약.<br/>
+      파일럿 첫 30일 자평이 <b>CPA 보전 5%</b> 추가 — 가입 100건 미달 시 리스크 헷지.
+    </div>
+    <div class="right">
+      <div>사업 제휴</div>
+      <div class="phone">1577-0000</div>
+      <div>partner@japyeong.kr</div>
+      <div>ja-pyeong.vercel.app</div>
+    </div>
+  </div>
+
+  <!-- Meta -->
+  <div class="meta">
+    <div>JAPYEONG · 子平 — 결정 앞에, 자평.</div>
+    <div>2026.06 · v1 · CONFIDENTIAL</div>
+  </div>
+
+</div>
+
+</body>
+</html>
