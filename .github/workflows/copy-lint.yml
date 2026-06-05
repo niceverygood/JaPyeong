@@ -1,0 +1,50 @@
+name: Copy Lint (금지어 차단)
+
+on:
+  pull_request:
+    paths:
+      - 'web/**'
+      - 'mobile/src/**'
+      - 'docs/**'
+      - 'backend/src/ai/**'
+      - 'backend/src/api/**'
+
+jobs:
+  forbidden-words:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute changed text
+        id: diff
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          git diff "$BASE" "$HEAD" -- 'web/**' 'mobile/src/**' 'docs/**' 'backend/src/ai/**' 'backend/src/api/**' \
+            | grep -E '^\+[^+]' \
+            | sed 's/^\+//' > /tmp/diff-added.txt
+          wc -l /tmp/diff-added.txt
+        shell: bash
+
+      - name: Check forbidden words
+        run: |
+          set -e
+          FORBIDDEN=$(grep -vE '^(#|$)' scripts/forbidden-words.txt || true)
+          FAIL=0
+          while IFS= read -r word; do
+            [ -z "$word" ] && continue
+            if grep -F -n "$word" /tmp/diff-added.txt > /tmp/hits.txt 2>/dev/null; then
+              echo "❌ 금지어 발견: '$word'"
+              cat /tmp/hits.txt | head -5
+              echo "---"
+              FAIL=1
+            fi
+          done <<< "$FORBIDDEN"
+          if [ "$FAIL" -eq 1 ]; then
+            echo ""
+            echo "::error::카피 가이드라인 위반 — docs/legal/copy-guidelines.md 참조"
+            exit 1
+          fi
+          echo "✅ 금지어 검사 통과"
