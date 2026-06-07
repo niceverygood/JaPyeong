@@ -11,9 +11,9 @@ from __future__ import annotations
 import os
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from alembic import context
 from src.core.db import Base  # noqa: F401
 from src.models import db_models  # noqa: F401  — 메타데이터에 모델 등록
 
