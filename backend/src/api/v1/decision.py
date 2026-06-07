@@ -10,7 +10,7 @@ from src.ai.tone_down import tone_down
 from src.api.v1.chat_schemas import CitationDTO
 from src.api.v1.decision_schemas import DecisionRequest, DecisionResponse
 from src.middleware.rate_limit import get_limiter
-from src.services import saju_service
+from src.services import decision_log_service, saju_service
 
 router = APIRouter(prefix="/v1/decision", tags=["decision"])
 
@@ -75,6 +75,25 @@ async def decision(req: DecisionRequest, request: Request) -> DecisionResponse:
 
     # 3. 후처리 가드레일 (answer 위주)
     post = guardrails.filter_answer(result.answer)
+
+    # 3-1. 결정 로그 자산화 (DATABASE_URL 설정 시만 작동, 진짜 해자 ❶)
+    # TODO Sprint 1-2: request 헤더에서 user_id 추출 + birth_record_id 매핑
+    try:
+        await decision_log_service.save_decision_log(
+            user_id=None,             # Sprint 1-2 회원 도입 후 jwt 디코드
+            birth_record_id=None,
+            decision_type="general",  # Sprint 11-12 자동 분류기
+            natal=natal,
+            option_a_summary=req.option_a.title,
+            option_b_summary=req.option_b.title,
+            user_context=req.context,
+            lean=result.lean,
+            advisor_response_summary=result.answer[:500],
+            confidence=result.confidence,
+        )
+    except Exception:
+        # 결정 로그 실패가 자문 응답을 막아선 안 됨
+        pass
 
     # 4. 한자 자동 병기
     return DecisionResponse(

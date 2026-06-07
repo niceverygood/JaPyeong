@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>자평 × 자문위원 1페이지 소개서</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700;900&display=swap');
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css');
+
+  :root {
+    --bg: #0E0F13; --surface: #15171E; --surface-2: #1B1E27;
+    --gold: #C9A961; --gold-dim: #8C7838; --gold-light: #D4B86A;
+    --text: #ECECEF; --text-2: #B7B8C0; --text-mut: #80828D;
+    --line: #2A2E3A; --ok: #6CB58A;
+    --sans: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", sans-serif;
+    --myeongjo: "Noto Serif KR", "Apple SD Gothic Neo", "Nanum Myeongjo", Batang, serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #07080B; color: var(--text); font-family: var(--sans); }
+
+  .page {
+    width: 210mm; min-height: 297mm; padding: 14mm 13mm 12mm;
+    margin: 24px auto; background: var(--bg);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.45);
+    border: 1px solid var(--line);
+  }
+
+  .header { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 12px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+  .brand .hanja { font-family: var(--myeongjo); font-size: 28px; font-weight: 900; }
+  .brand .hanja .gold { color: var(--gold); }
+  .brand .han { font-size: 10px; color: var(--text-mut); letter-spacing: 0.32em; }
+  .header .right { text-align: right; }
+  .header .right .label { font-size: 10px; letter-spacing: 0.32em; color: var(--gold); font-family: var(--myeongjo); }
+  .header .right .doc-title { font-size: 13px; color: var(--text-2); margin-top: 3px; }
+
+  .pitch { text-align: center; padding: 8px 0 14px; }
+  .pitch .eyebrow { font-size: 10px; letter-spacing: 0.42em; color: var(--gold); font-family: var(--myeongjo); }
+  .pitch h1 { font-family: var(--myeongjo); font-size: 22px; font-weight: 700; line-height: 1.35; color: var(--text); margin: 8px 0 4px; }
+  .pitch h1 .gold { color: var(--gold); }
+  .pitch .sub { font-size: 12px; color: var(--text-2); line-height: 1.5; }
+
+  .h2 { font-family: var(--myeongjo); font-size: 14px; font-weight: 700; color: var(--text); margin: 18px 0 10px; padding-left: 10px; border-left: 3px solid var(--gold); }
+
+  /* 3-layer card */
+  .layers { display: grid; grid-template-columns: 1fr; gap: 6px; }
+  .layer { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; display: grid; grid-template-columns: 60px 1fr; gap: 12px; align-items: center; }
+  .layer .num { font-family: var(--myeongjo); font-size: 11px; color: var(--gold); letter-spacing: 0.2em; font-weight: 700; }
+  .layer .title { font-family: var(--myeongjo); font-size: 13px; color: var(--text); font-weight: 700; }
+  .layer .body { font-size: 11px; color: var(--text-2); line-height: 1.5; }
+
+  /* What we offer */
+  .offer { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+  .offer-item { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  .offer-item.featured { border-color: var(--gold); background: linear-gradient(180deg, rgba(201,169,97,0.07), var(--surface) 60%); }
+  .offer-item .t { font-family: var(--myeongjo); font-size: 12px; color: var(--gold); font-weight: 700; margin-bottom: 3px; }
+  .offer-item .d { font-size: 10.5px; color: var(--text-2); line-height: 1.5; }
+
+  /* Identity 가드 */
+  .id-guard { background: var(--surface-2); border: 1px solid var(--gold-dim); border-radius: 8px; padding: 10px 14px; }
+  .id-guard .ttl { font-family: var(--myeongjo); font-size: 11px; color: var(--gold); letter-spacing: 0.18em; margin-bottom: 4px; }
+  .id-guard ul { margin: 0; padding-left: 16px; font-size: 10.5px; color: var(--text-2); line-height: 1.65; }
+
+  /* CTA footer */
+  .cta { margin-top: 14px; padding: 12px 16px; background: linear-gradient(180deg, rgba(201,169,97,0.10), rgba(201,169,97,0.03)); border: 1px solid var(--gold-dim); border-radius: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .cta .left { font-size: 11.5px; color: var(--text); line-height: 1.65; }
+  .cta .left b { color: var(--gold); font-family: var(--myeongjo); font-size: 13px; }
+  .cta .right { text-align: right; font-size: 10.5px; color: var(--text-2); line-height: 1.55; }
+  .cta .right .phone { font-family: var(--myeongjo); font-size: 14px; color: var(--gold); font-weight: 700; }
+
+  .meta { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-mut); margin-top: 10px; padding-top: 6px; border-top: 1px solid var(--line); letter-spacing: 0.06em; }
+
+  @media print {
+    html, body { background: white; }
+    .page { box-shadow: none; margin: 0; border: 0; }
+    @page { size: A4; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="brand">
+      <div class="hanja">子<span class="gold">平</span></div>
+      <div class="han">자 평 · J A P Y E O N G</div>
+    </div>
+    <div class="right">
+      <div class="label">CONFIDENTIAL · ADVISOR INVITATION</div>
+      <div class="doc-title">자문위원 1페이지 소개서 — 2026</div>
+    </div>
+  </div>
+
+  <div class="pitch">
+    <div class="eyebrow">士 · 자문위원 모집</div>
+    <h1>"맞다·안 맞다"를 약속하지 않는<br/>유일한 사주 자문 도구 — <span class="gold">자평</span>.</h1>
+    <div class="sub">결정론 엔진 + AI 보조 고전 해석 + <b>자문위원 1:1</b>의 3층 구조. 학파별 견해를 솔직히 표기합니다.</div>
+  </div>
+
+  <!-- 3 Layers -->
+  <div class="h2">자평의 3층 구조</div>
+  <div class="layers">
+    <div class="layer">
+      <div>
+        <div class="num">Layer 1</div>
+        <div class="title">결정론 명리 엔진</div>
+      </div>
+      <div class="body">절기·진태양시·60갑자·격국·용신·대운을 코드가 먼저 확정. AI가 사주를 푸는 게 아닙니다. 회귀 테스트 316건 통과.</div>
+    </div>
+    <div class="layer">
+      <div>
+        <div class="num">Layer 2</div>
+        <div class="title">AI 보조 고전 해석</div>
+      </div>
+      <div class="body">엔진 결과 위에서 해석만. 연해자평·삼명통회·적천수 출처 의무 인용. 학파별 견해가 갈리면 솔직히 표기. 단정 표현 자동 톤다운.</div>
+    </div>
+    <div class="layer">
+      <div>
+        <div class="num">Layer 3</div>
+        <div class="title">자문위원 (사람) — 선생님 자리</div>
+      </div>
+      <div class="body">Premium·Family 패키지에서 1:1 전화 상담. 자평의 정통성·신뢰의 핵심. 경쟁사 카피 불가의 진짜 해자.</div>
+    </div>
+  </div>
+
+  <!-- What we offer -->
+  <div class="h2">자문위원께 제안드리는 내용</div>
+  <div class="offer">
+    <div class="offer-item">
+      <div class="t">자문료</div>
+      <div class="d">회당 5~15만 원 협의. 월 가용 시간 × 단가로 보장.</div>
+    </div>
+    <div class="offer-item featured">
+      <div class="t">3년 독점 위탁 + PI 보험</div>
+      <div class="d">동종 "AI 사주 플랫폼" 활동만 제한. 본인 명리원·유튜브·저서 활동 모두 자유. 전문가배상책임 보험 자평 부담.</div>
+    </div>
+    <div class="offer-item featured">
+      <div class="t">본인 채널 노출 강화</div>
+      <div class="d">자평 사이트·앱·PR에 선생님의 경력·저서·매체 출연 이력 노출. 본인 유튜브·인스타 트래픽 유입.</div>
+    </div>
+    <div class="offer-item">
+      <div class="t">지분 / 스톡옵션 (협의)</div>
+      <div class="d">초기 자문위원 5명에 한해 0.05~0.5% 옵션 검토. 4년 베스팅 / 1년 클리프.</div>
+    </div>
+  </div>
+
+  <!-- Identity guard -->
+  <div class="h2">자평 정체성 — 자문위원과 함께 지키는 것</div>
+  <div class="id-guard">
+    <div class="ttl">FORBIDDEN — 절대 안 하는 것</div>
+    <ul>
+      <li>"100% 적중", "반드시", "운명을 바꾼다" 단정·결과 보장 표현</li>
+      <li>"오늘만", "놓치면 손해" 한정·FOMO·공포 자극 마케팅</li>
+      <li>의학·법률·재무 결정 단정 ("이 병이 낫는다", "이 주식 사라")</li>
+      <li>자녀 사주 단독 상품 (6개월 출시 보류 — 윤리 검증)</li>
+      <li>자동 갱신 디폴트 ON · 해지 어렵게 만들기 (다크 패턴)</li>
+      <li>학파 한 곳만 따르는 단일 정답 환상</li>
+    </ul>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta">
+    <div class="left">
+      <b>다음 단계</b><br/>
+      ① 15분 화상 미팅 → ② 계약서 초안 검토 → ③ 3개월 시범 운영 → ④ 본 계약.<br/>
+      추천 시 사례비 100만 원. 답장 안 주셔도 정중히 마무리합니다.
+    </div>
+    <div class="right">
+      <div>자문위원 영입 담당</div>
+      <div class="phone">advisor@japyeong.kr</div>
+      <div>1577-0000 · 평일 10–18시</div>
+      <div>ja-pyeong.vercel.app</div>
+    </div>
+  </div>
+
+  <div class="meta">
+    <div>JAPYEONG · 子平 — 결정 앞에, 자평.</div>
+    <div>2026.06 · v1 · CONFIDENTIAL · ADVISOR INVITATION</div>
+  </div>
+
+</div>
+</body>
+</html>
