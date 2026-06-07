@@ -5,19 +5,27 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from src.ai import consultation, guardrails
 from src.ai.glossary import annotate_hanja
+from src.ai.tone_down import tone_down
 from src.api.v1.chat_schemas import CitationDTO
 from src.api.v1.compat_schemas import CompatRequest, CompatResponse
+from src.middleware.rate_limit import get_limiter
 from src.services import compatibility_service
 
 router = APIRouter(prefix="/v1/compatibility", tags=["compatibility"])
 
 
+def _post(text: str) -> str:
+    """단정 톤다운 + 한자 자동 병기."""
+    return annotate_hanja(tone_down(text))
+
+
 @router.post("", response_model=CompatResponse)
-async def compatibility(req: CompatRequest) -> CompatResponse:
+async def compatibility(req: CompatRequest, request: Request) -> CompatResponse:
+    await get_limiter().enforce(request, user_tier="anon")
     # 0. 위기 키워드 단축 (질문이 있을 때만)
     if req.question:
         pre = guardrails.check_question(req.question)
@@ -63,21 +71,21 @@ async def compatibility(req: CompatRequest) -> CompatResponse:
     # 4. 한자 자동 병기
     return CompatResponse(
         analysis=analysis,
-        answer=annotate_hanja(post.answer),
-        basis=annotate_hanja(result.basis),
-        perspective=annotate_hanja(result.perspective),
-        timing=annotate_hanja(result.timing),
-        cautions=[annotate_hanja(c) for c in result.cautions],
+        answer=_post(post.answer),
+        basis=_post(result.basis),
+        perspective=_post(result.perspective),
+        timing=_post(result.timing),
+        cautions=[_post(c) for c in result.cautions],
         citations=[
             CitationDTO(
-                source=annotate_hanja(c.source),
-                volume=annotate_hanja(c.volume) if c.volume else None,
+                source=_post(c.source),
+                volume=_post(c.volume) if c.volume else None,
             )
             for c in result.citations
         ],
-        contested=[annotate_hanja(c) for c in result.contested],
+        contested=[_post(c) for c in result.contested],
         confidence=result.confidence,
-        follow_up_suggestions=[annotate_hanja(s) for s in result.follow_up_suggestions],
+        follow_up_suggestions=[_post(s) for s in result.follow_up_suggestions],
         flags=list(post.flags),
         model=result.model,
         relationship_type=req.relationship_type,

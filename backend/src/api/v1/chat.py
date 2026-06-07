@@ -3,18 +3,32 @@
 Phase 4 핵심: 3층 책임 분리.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from src.ai import consultation, guardrails
 from src.ai.glossary import annotate_hanja
+from src.ai.tone_down import tone_down
 from src.api.v1.chat_schemas import ChatRequest, ChatResponse, CitationDTO
+from src.middleware.rate_limit import get_limiter
 from src.services import saju_service
 
 router = APIRouter(prefix="/v1/chat", tags=["chat"])
 
 
+def _post(text: str) -> str:
+    """모든 LLM 응답 텍스트 필드에 적용할 후처리 파이프라인.
+
+    1. 단정 표현 톤다운 (HIGH + MED)
+    2. 한자 자동 병기 (한글(漢字))
+    """
+    return annotate_hanja(tone_down(text))
+
+
 @router.post("", response_model=ChatResponse)
-async def chat(req: ChatRequest) -> ChatResponse:
+async def chat(req: ChatRequest, request: Request) -> ChatResponse:
+    # -1. Rate limit — 비회원 일일 5회 / IP 분당 60 / IP 일일 1000
+    # TODO Sprint 1-2: user_tier 를 JWT 에서 추출
+    await get_limiter().enforce(request, user_tier="anon")
     # 0. 입력 위기 키워드 검사 — 즉시 상담 안내로 단축
     pre = guardrails.check_question(req.question)
     if not pre.safe:
@@ -47,23 +61,23 @@ async def chat(req: ChatRequest) -> ChatResponse:
     # 3. 후처리 가드레일
     post = guardrails.filter_answer(result.answer)
 
-    # 4. 한자 → '한글(한자)' 자동 병기 (모든 텍스트 필드)
+    # 4. 후처리 — 톤다운 + 한자 자동 병기 (모든 텍스트 필드)
     return ChatResponse(
-        answer=annotate_hanja(post.answer),
-        basis=annotate_hanja(result.basis),
-        perspective=annotate_hanja(result.perspective),
-        timing=annotate_hanja(result.timing),
-        cautions=[annotate_hanja(c) for c in result.cautions],
+        answer=_post(post.answer),
+        basis=_post(result.basis),
+        perspective=_post(result.perspective),
+        timing=_post(result.timing),
+        cautions=[_post(c) for c in result.cautions],
         citations=[
             CitationDTO(
-                source=annotate_hanja(c.source),
-                volume=annotate_hanja(c.volume) if c.volume else None,
+                source=_post(c.source),
+                volume=_post(c.volume) if c.volume else None,
             )
             for c in result.citations
         ],
-        contested=[annotate_hanja(c) for c in result.contested],
+        contested=[_post(c) for c in result.contested],
         confidence=result.confidence,
-        follow_up_suggestions=[annotate_hanja(s) for s in result.follow_up_suggestions],
+        follow_up_suggestions=[_post(s) for s in result.follow_up_suggestions],
         flags=list(post.flags),
         model=result.model,
     )
