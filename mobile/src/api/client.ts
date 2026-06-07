@@ -20,9 +20,22 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public retryAfter?: number,
   ) {
     super(message);
     this.name = "ApiError";
+  }
+
+  /** 레이트리밋(일일 한도) 도달 — paywall로 유도해야 함 */
+  get isRateLimited(): boolean {
+    return this.status === 429;
+  }
+
+  /** 회원 일일 한도 메시지에 "한도" 단어가 있으면 paywall 트리거 */
+  get isPaywallTrigger(): boolean {
+    return this.status === 429 && (
+      this.message.includes("한도") || this.message.includes("구독")
+    );
   }
 }
 
@@ -39,7 +52,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // ignore parse errors
     }
-    throw new ApiError(res.status, detail);
+    const retryAfter = parseInt(res.headers.get("Retry-After") ?? "0", 10);
+    throw new ApiError(res.status, detail, retryAfter || undefined);
   }
   return (await res.json()) as T;
 }
