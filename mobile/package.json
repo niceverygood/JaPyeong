@@ -9,7 +9,12 @@
     "ios": "expo start --ios",
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
-    "build:web": "mkdir -p node_modules/.cache/nativewind && npx tailwindcss -i ./global.css -o node_modules/.cache/nativewind/global.css && npx expo export -p web"
+    "build:web": "mkdir -p node_modules/.cache/nativewind && npx tailwindcss -i ./global.css -o node_modules/.cache/nativewind/global.css && npx expo export -p web",
+    "build:ios": "eas build --platform ios --profile production",
+    "build:android": "eas build --platform android --profile production",
+    "build:preview": "eas build --platform all --profile preview",
+    "submit:ios": "eas submit --platform ios --profile production",
+    "submit:android": "eas submit --platform android --profile production"
   },
   "dependencies": {
     "@expo/metro-runtime": "~3.2.3",
@@ -18,6 +23,8 @@
     "@react-navigation/native-stack": "^6.11.0",
     "@tanstack/react-query": "^5.51.0",
     "expo": "~51.0.0",
+    "expo-font": "~12.0.10",
+    "expo-splash-screen": "~0.27.7",
     "expo-status-bar": "~1.12.1",
     "nativewind": "4.0.36",
     "react": "18.2.0",

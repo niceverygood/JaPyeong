@@ -1,0 +1,50 @@
+{
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "channel": "development"
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false,
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "channel": "preview"
+    },
+    "production": {
+      "autoIncrement": true,
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "channel": "production"
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "PLACEHOLDER-REPLACE-WITH-APPLE-ID-EMAIL",
+        "ascAppId": "PLACEHOLDER-REPLACE-WITH-ASC-APP-ID",
+        "appleTeamId": "PLACEHOLDER-REPLACE-WITH-TEAM-ID"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./pc-api-service-account-key.json",
+        "track": "production"
+      }
+    }
+  }
+}

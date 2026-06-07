@@ -1,17 +1,20 @@
 /** 백엔드 HTTP 클라이언트.
  *
- * 기본값:
- *  - 웹(Vercel): 같은 출처의 "/api" (서버리스 함수, CORS 불필요)
- *  - 네이티브(개발): "http://127.0.0.1:8000" (iOS 시뮬레이터는 localhost=호스트)
- * EXPO_PUBLIC_API_BASE 가 있으면 항상 우선한다.
- *   예) EXPO_PUBLIC_API_BASE=http://192.168.0.10:8000
+ * 기본값 우선순위:
+ *  1. EXPO_PUBLIC_API_BASE 환경변수 (있으면 무조건)
+ *     예) EXPO_PUBLIC_API_BASE=http://192.168.0.10:8000  (LAN 개발)
+ *  2. 웹(Vercel): "/api" (서버리스 함수, CORS 불필요)
+ *  3. 네이티브(iOS/Android): 프로덕션 https://ja-pyeong.vercel.app/api
+ *     (개발 시는 EXPO_PUBLIC_API_BASE 로 LAN IP 지정)
  */
 
 import { Platform } from "react-native";
 
+const PROD_API = "https://ja-pyeong.vercel.app/api";
+
 export const API_BASE =
   process.env.EXPO_PUBLIC_API_BASE ??
-  (Platform.OS === "web" ? "/api" : "http://127.0.0.1:8000");
+  (Platform.OS === "web" ? "/api" : PROD_API);
 
 export class ApiError extends Error {
   constructor(

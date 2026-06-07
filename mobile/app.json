@@ -3,32 +3,63 @@
     "name": "자평",
     "slug": "japyeong",
     "scheme": "japyeong",
-    "version": "0.0.1",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#0F1419",
+    "icon": "./assets/icon.png",
     "splash": {
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0F1419"
+      "backgroundColor": "#0E0F13"
     },
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.japyeong.app"
+      "bundleIdentifier": "com.japyeong.app",
+      "buildNumber": "1",
+      "icon": "./assets/icon.png",
+      "userInterfaceStyle": "dark",
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true,
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false
+        }
+      }
     },
     "android": {
       "package": "com.japyeong.app",
+      "versionCode": 1,
+      "userInterfaceStyle": "dark",
       "adaptiveIcon": {
-        "backgroundColor": "#0F1419"
-      }
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0E0F13"
+      },
+      "permissions": []
     },
-    "plugins": [],
     "web": {
       "bundler": "metro",
       "output": "single",
-      "backgroundColor": "#0F1419"
+      "favicon": "./assets/favicon.png",
+      "backgroundColor": "#0E0F13"
     },
+    "plugins": [
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/PretendardVariable.ttf"
+          ]
+        }
+      ]
+    ],
     "experiments": {
       "baseUrl": "/app"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "PLACEHOLDER-REPLACE-AFTER-EAS-INIT"
+      }
     }
   }
 }
