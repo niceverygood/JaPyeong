@@ -154,11 +154,24 @@ class User(Base):
     marketing_consent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     marketing_consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
+    # 일진 알림 설정 (K-cron 발송 기준, 자평 가드: opt-in + 끄기 1depth)
+    notif_daily_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False,
+    )
+    notif_daily_time_hhmm: Mapped[str] = mapped_column(
+        String(5), default="08:00", nullable=False,
+    )
+    # 부정 통변(주의·흉) 알림 끄기 (불안 마케팅 차단, 자평 가드 #9)
+    notif_negative_muted: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False,
+    )
+
     birth_records: Mapped[list[BirthRecord]] = relationship(back_populates="user")
     conversations: Mapped[list[Conversation]] = relationship(back_populates="user")
     subscriptions: Mapped[list[Subscription]] = relationship(back_populates="user")
     decisions: Mapped[list[DecisionLog]] = relationship(back_populates="user")
     family_members: Mapped[list[FamilyMember]] = relationship(back_populates="user")
+    push_tokens: Mapped[list[PushToken]] = relationship(back_populates="user")
 
     __table_args__ = (
         UniqueConstraint("oauth_provider", "oauth_subject", name="uq_user_oauth"),
@@ -486,6 +499,52 @@ class ValidationCaseRow(Base):
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     accuracy_score: Mapped[float | None] = mapped_column(Float)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+# ── PushToken (일진 알림 전송 대상) ──────────────────────────
+class PushToken(Base):
+    """Expo Push 또는 FCM 토큰 보관.
+
+    한 사용자가 여러 기기(폰·태블릿) 보유 가능 → user_id × token unique.
+    """
+
+    __tablename__ = "push_token"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), index=True)
+    token: Mapped[str] = mapped_column(String(256), nullable=False, index=True)
+    platform: Mapped[str] = mapped_column(String(16), nullable=False)  # ios / android / web
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(String(255))  # DeviceNotRegistered 등
+
+    user: Mapped[User] = relationship(back_populates="push_tokens")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "token", name="uq_push_token_user_token"),
+    )
+
+
+# ── NotificationLog (발송 감사) ──────────────────────────────
+class NotificationLog(Base):
+    """푸시 발송 결과 로그 — 감사·디버그·운영 모니터링."""
+
+    __tablename__ = "notification_log"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), index=True)
+    push_token_id: Mapped[int | None] = mapped_column(
+        ForeignKey("push_token.id", ondelete="SET NULL"),
+    )
+    notification_type: Mapped[str] = mapped_column(String(40), nullable=False)  # "daily_fortune" 등
+    title: Mapped[str] = mapped_column(String(120), nullable=False)
+    body: Mapped[str] = mapped_column(String(500), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)  # "ok" / "error"
+    provider_response: Mapped[dict | None] = mapped_column(JSONB)
+    sent_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_now, index=True,
+    )
 
 
 # ── RateLimitEvent (감사·모니터링) ────────────────────────────

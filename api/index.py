@@ -18,7 +18,14 @@ import httpx  # noqa: E402
 from fastapi import FastAPI, Header, HTTPException  # noqa: E402
 from pydantic import BaseModel, EmailStr, Field  # noqa: E402
 
-from src.api.v1 import chat, compatibility, date_selection, decision, saju  # noqa: E402
+from src.api.v1 import (  # noqa: E402
+    chat,
+    compatibility,
+    date_selection,
+    decision,
+    notifications,
+    saju,
+)
 
 app = FastAPI(title="자평(子平) API", version="0.0.1")
 
@@ -28,6 +35,7 @@ app.include_router(chat.router, prefix="/api")
 app.include_router(compatibility.router, prefix="/api")
 app.include_router(date_selection.router, prefix="/api")
 app.include_router(decision.router, prefix="/api")
+app.include_router(notifications.router, prefix="/api")
 
 
 @app.get("/api/health")
