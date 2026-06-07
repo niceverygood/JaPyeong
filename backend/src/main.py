@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 
-from src.api.v1 import auth, payment, saju
+from src.api.v1 import admin, auth, payment, saju
 from src.core.config import get_settings
 from src.core.logging import configure_logging, get_logger
 
@@ -46,3 +46,4 @@ async def health() -> dict[str, str]:
 app.include_router(saju.router)
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(payment.router, prefix="/api/v1")
+app.include_router(admin.router, prefix="/api/v1")
