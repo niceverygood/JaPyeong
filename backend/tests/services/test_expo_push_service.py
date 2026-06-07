@@ -147,7 +147,11 @@ async def test_network_failure(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.asyncio
 async def test_server_error(monkeypatch: pytest.MonkeyPatch) -> None:
     async def mock_post(self, url: str, **kwargs):  # noqa: ARG001
-        return httpx.Response(503, json={"errors": [{"message": "service unavailable"}]}, request=httpx.Request("POST", EXPO_PUSH_URL))
+        return httpx.Response(
+            503,
+            json={"errors": [{"message": "service unavailable"}]},
+            request=httpx.Request("POST", EXPO_PUSH_URL),
+        )
 
     monkeypatch.setattr(httpx.AsyncClient, "post", mock_post)
     messages = [msg() for _ in range(2)]
@@ -187,7 +191,11 @@ async def test_uses_expo_url(monkeypatch: pytest.MonkeyPatch) -> None:
         captured["url"] = url
         captured["headers"] = kwargs.get("headers", {})
         captured["json"] = kwargs.get("json", [])
-        return httpx.Response(200, json={"data": [{"status": "ok"}]}, request=httpx.Request("POST", EXPO_PUSH_URL))
+        return httpx.Response(
+            200,
+            json={"data": [{"status": "ok"}]},
+            request=httpx.Request("POST", EXPO_PUSH_URL),
+        )
 
     monkeypatch.setattr(httpx.AsyncClient, "post", mock_post)
     await send_batch([msg()])

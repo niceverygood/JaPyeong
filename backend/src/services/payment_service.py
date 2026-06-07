@@ -1,0 +1,560 @@
+"""결제 서비스 — Toss/Kakao Pay 통합 (PortOne 옵션).
+
+설계:
+  1. checkout 요청 → 결제 의도(payment.PENDING) + subscription(PENDING) 생성
+  2. 외부 결제 게이트웨이로 redirect URL 발급
+  3. webhook 또는 confirm 호출 시 결제 검증 → 활성화
+  4. autorenew 는 default OFF (BM v2). opt-in 별도 API.
+
+가격 정책 (BM v2):
+  - basic    49,000원/월
+  - standard 149,000원/월
+  - premium  390,000원/월
+  - family   590,000원/월
+
+외부 SDK 어댑터:
+  - TossPaymentAdapter (실제 HTTP)
+  - KakaoPayAdapter (실제 HTTP)
+  - MockPaymentAdapter (테스트 + 키 미설정 환경)
+
+DB 미설정 시 모든 함수 raise (결제는 인프라 필수).
+"""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from typing import Any, Protocol
+
+import httpx
+
+PLAN_PRICES: dict[str, int] = {
+    "basic": 49_000,
+    "standard": 149_000,
+    "premium": 390_000,
+    "family": 590_000,
+}
+
+
+class PaymentError(Exception):
+    """결제 도메인 에러."""
+
+
+def _db_required() -> None:
+    if not os.environ.get("DATABASE_URL"):
+        raise PaymentError("DATABASE_URL 미설정 — 결제 기능 사용 불가.")
+
+
+def validate_plan(plan: str) -> int:
+    """plan 코드 → 가격 (원). 잘못된 plan 이면 raise."""
+    price = PLAN_PRICES.get(plan)
+    if price is None:
+        raise PaymentError(f"알 수 없는 plan: {plan}")
+    return price
+
+
+# ── 어댑터 인터페이스 ────────────────────────────────────
+@dataclass(slots=True, frozen=True)
+class CheckoutSession:
+    """결제 게이트웨이가 발급한 결제 세션."""
+
+    provider: str            # toss / kakao / mock
+    redirect_url: str        # 사용자가 이동할 URL
+    provider_session_id: str # 게이트웨이의 세션·결제 키
+
+
+@dataclass(slots=True, frozen=True)
+class ConfirmResult:
+    """결제 confirm 응답 정규화."""
+
+    provider_tx_id: str
+    amount_krw: int
+    method: str | None
+    receipt_url: str | None
+    raw: dict[str, Any]
+
+
+class PaymentAdapter(Protocol):
+    name: str
+
+    async def create_checkout(
+        self,
+        amount_krw: int,
+        order_name: str,
+        order_id: str,
+        success_url: str,
+        fail_url: str,
+    ) -> CheckoutSession: ...
+
+    async def confirm(
+        self,
+        provider_session_id: str,
+        amount_krw: int,
+        extra: dict[str, Any] | None = None,
+    ) -> ConfirmResult: ...
+
+    async def refund(
+        self,
+        provider_tx_id: str,
+        amount_krw: int,
+        reason: str,
+    ) -> dict[str, Any]: ...
+
+
+# ── 어댑터 구현 ──────────────────────────────────────────
+class TossPaymentAdapter:
+    """토스페이먼츠 — Payments v1 SDK (server confirm 흐름)."""
+
+    name = "toss"
+    BASE = "https://api.tosspayments.com/v1"
+
+    def __init__(self, secret_key: str) -> None:
+        self.secret_key = secret_key
+
+    def _auth(self) -> dict[str, str]:
+        import base64
+        encoded = base64.b64encode(f"{self.secret_key}:".encode()).decode()
+        return {"Authorization": f"Basic {encoded}"}
+
+    async def create_checkout(
+        self,
+        amount_krw: int,
+        order_name: str,
+        order_id: str,
+        success_url: str,
+        fail_url: str,
+    ) -> CheckoutSession:
+        # 토스는 클라이언트 SDK 로 직접 결제창을 호출 → 우리는 paymentKey 만 안내.
+        # 서버는 success_url 로 받은 paymentKey 를 confirm 호출.
+        return CheckoutSession(
+            provider="toss",
+            redirect_url=f"{success_url}?orderId={order_id}&amount={amount_krw}",
+            provider_session_id=order_id,
+        )
+
+    async def confirm(
+        self,
+        provider_session_id: str,
+        amount_krw: int,
+        extra: dict[str, Any] | None = None,
+    ) -> ConfirmResult:
+        if not extra or "paymentKey" not in extra:
+            raise PaymentError("토스 confirm 에 paymentKey 누락")
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(
+                f"{self.BASE}/payments/confirm",
+                headers={**self._auth(), "Content-Type": "application/json"},
+                json={
+                    "paymentKey": extra["paymentKey"],
+                    "orderId": provider_session_id,
+                    "amount": amount_krw,
+                },
+            )
+            if resp.status_code >= 400:
+                raise PaymentError(f"토스 confirm 실패 {resp.status_code}: {resp.text[:200]}")
+            data = resp.json()
+        return ConfirmResult(
+            provider_tx_id=data.get("paymentKey", extra["paymentKey"]),
+            amount_krw=int(data.get("totalAmount", amount_krw)),
+            method=data.get("method"),
+            receipt_url=(data.get("receipt") or {}).get("url"),
+            raw=data,
+        )
+
+    async def refund(
+        self,
+        provider_tx_id: str,
+        amount_krw: int,
+        reason: str,
+    ) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(
+                f"{self.BASE}/payments/{provider_tx_id}/cancel",
+                headers={**self._auth(), "Content-Type": "application/json"},
+                json={"cancelReason": reason, "cancelAmount": amount_krw},
+            )
+            if resp.status_code >= 400:
+                raise PaymentError(f"토스 환불 실패: {resp.text[:200]}")
+            return resp.json()
+
+
+class KakaoPayAdapter:
+    """카카오페이 — single payment 일반결제."""
+
+    name = "kakao"
+    BASE = "https://kapi.kakao.com/v1/payment"
+
+    def __init__(self, admin_key: str, cid: str = "TC0ONETIME") -> None:
+        self.admin_key = admin_key
+        self.cid = cid  # TC0ONETIME = 테스트, 실서비스는 별도 발급
+
+    def _headers(self) -> dict[str, str]:
+        return {
+            "Authorization": f"KakaoAK {self.admin_key}",
+            "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+        }
+
+    async def create_checkout(
+        self,
+        amount_krw: int,
+        order_name: str,
+        order_id: str,
+        success_url: str,
+        fail_url: str,
+    ) -> CheckoutSession:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(
+                f"{self.BASE}/ready",
+                headers=self._headers(),
+                data={
+                    "cid": self.cid,
+                    "partner_order_id": order_id,
+                    "partner_user_id": order_id,
+                    "item_name": order_name,
+                    "quantity": 1,
+                    "total_amount": amount_krw,
+                    "tax_free_amount": 0,
+                    "approval_url": success_url,
+                    "fail_url": fail_url,
+                    "cancel_url": fail_url,
+                },
+            )
+            if resp.status_code >= 400:
+                raise PaymentError(f"카카오 ready 실패: {resp.text[:200]}")
+            data = resp.json()
+        return CheckoutSession(
+            provider="kakao",
+            redirect_url=data["next_redirect_pc_url"],
+            provider_session_id=data["tid"],
+        )
+
+    async def confirm(
+        self,
+        provider_session_id: str,
+        amount_krw: int,
+        extra: dict[str, Any] | None = None,
+    ) -> ConfirmResult:
+        if not extra or "pg_token" not in extra:
+            raise PaymentError("카카오 confirm 에 pg_token 누락")
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(
+                f"{self.BASE}/approve",
+                headers=self._headers(),
+                data={
+                    "cid": self.cid,
+                    "tid": provider_session_id,
+                    "partner_order_id": extra.get("order_id", provider_session_id),
+                    "partner_user_id": extra.get("user_id", provider_session_id),
+                    "pg_token": extra["pg_token"],
+                },
+            )
+            if resp.status_code >= 400:
+                raise PaymentError(f"카카오 approve 실패: {resp.text[:200]}")
+            data = resp.json()
+        return ConfirmResult(
+            provider_tx_id=data.get("aid", provider_session_id),
+            amount_krw=int((data.get("amount") or {}).get("total", amount_krw)),
+            method="kakao_pay",
+            receipt_url=None,
+            raw=data,
+        )
+
+    async def refund(
+        self,
+        provider_tx_id: str,
+        amount_krw: int,
+        reason: str,
+    ) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(
+                f"{self.BASE}/cancel",
+                headers=self._headers(),
+                data={
+                    "cid": self.cid,
+                    "tid": provider_tx_id,
+                    "cancel_amount": amount_krw,
+                    "cancel_tax_free_amount": 0,
+                },
+            )
+            if resp.status_code >= 400:
+                raise PaymentError(f"카카오 환불 실패: {resp.text[:200]}")
+            return resp.json()
+
+
+class MockPaymentAdapter:
+    """테스트/개발용 — 항상 성공."""
+
+    name = "mock"
+
+    async def create_checkout(
+        self,
+        amount_krw: int,
+        order_name: str,
+        order_id: str,
+        success_url: str,
+        fail_url: str,
+    ) -> CheckoutSession:
+        return CheckoutSession(
+            provider="mock",
+            redirect_url=f"{success_url}?orderId={order_id}&mockSuccess=true",
+            provider_session_id=f"mock_{order_id}",
+        )
+
+    async def confirm(
+        self,
+        provider_session_id: str,
+        amount_krw: int,
+        extra: dict[str, Any] | None = None,
+    ) -> ConfirmResult:
+        return ConfirmResult(
+            provider_tx_id=f"mock_tx_{provider_session_id}",
+            amount_krw=amount_krw,
+            method="mock_card",
+            receipt_url=None,
+            raw={"mock": True, "extra": extra or {}},
+        )
+
+    async def refund(
+        self,
+        provider_tx_id: str,
+        amount_krw: int,
+        reason: str,
+    ) -> dict[str, Any]:
+        return {"mock": True, "refunded": amount_krw, "reason": reason}
+
+
+def get_adapter(provider: str) -> PaymentAdapter:
+    """환경변수 키 기반 어댑터 팩토리. 키 없으면 MockPaymentAdapter."""
+    if provider == "toss":
+        key = os.environ.get("TOSS_SECRET_KEY")
+        return TossPaymentAdapter(key) if key else MockPaymentAdapter()
+    if provider == "kakao":
+        key = os.environ.get("KAKAO_PAY_ADMIN_KEY")
+        cid = os.environ.get("KAKAO_PAY_CID", "TC0ONETIME")
+        return KakaoPayAdapter(key, cid) if key else MockPaymentAdapter()
+    if provider == "mock":
+        return MockPaymentAdapter()
+    raise PaymentError(f"지원하지 않는 결제 게이트웨이: {provider}")
+
+
+# ── 도메인 로직 ──────────────────────────────────────────
+async def create_checkout(
+    user_id: int,
+    plan: str,
+    provider: str,
+    success_url: str,
+    fail_url: str,
+    channel: str = "direct",
+    tm_partner_code: str | None = None,
+) -> dict[str, Any]:
+    """결제 의도 생성 + 게이트웨이 세션 발급.
+
+    Returns:
+        {payment_id, subscription_id, redirect_url, provider_session_id}
+    """
+    _db_required()
+    price = validate_plan(plan)
+    adapter = get_adapter(provider)
+
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from src.core.db import _session_factory
+    from src.models.db_models import (
+        Payment,
+        PaymentStatus,
+        Subscription,
+        SubscriptionStatus,
+    )
+
+    session: AsyncSession
+    async with _session_factory()() as session:
+        sub = Subscription(
+            user_id=user_id,
+            plan=plan,
+            status=SubscriptionStatus.PENDING,
+            channel=channel,
+            tm_partner_code=tm_partner_code,
+            price_krw=price,
+            autorenew=False,  # BM v2: opt-in 별도 API
+        )
+        session.add(sub)
+        await session.flush()  # sub.id 확보
+
+        payment = Payment(
+            subscription_id=sub.id,
+            user_id=user_id,
+            amount_krw=price,
+            status=PaymentStatus.PENDING,
+            provider=adapter.name,
+        )
+        session.add(payment)
+        await session.flush()
+
+        order_id = f"jp_{sub.id}_{payment.id}"
+        order_name = f"자평 {plan.upper()} 플랜"
+
+        checkout = await adapter.create_checkout(
+            amount_krw=price,
+            order_name=order_name,
+            order_id=order_id,
+            success_url=success_url,
+            fail_url=fail_url,
+        )
+
+        # provider session id 보관 (confirm 시 조회용)
+        payment.provider_tx_id = checkout.provider_session_id
+        await session.commit()
+
+        return {
+            "payment_id": payment.id,
+            "subscription_id": sub.id,
+            "order_id": order_id,
+            "redirect_url": checkout.redirect_url,
+            "provider": adapter.name,
+            "provider_session_id": checkout.provider_session_id,
+        }
+
+
+async def confirm_payment(
+    payment_id: int,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """결제 confirm — 게이트웨이 검증 + 구독 활성화."""
+    _db_required()
+
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from src.core.db import _session_factory
+    from src.models.db_models import (
+        Payment,
+        PaymentStatus,
+        Subscription,
+        SubscriptionStatus,
+    )
+
+    session: AsyncSession
+    async with _session_factory()() as session:
+        payment = await session.get(Payment, payment_id)
+        if payment is None:
+            raise PaymentError(f"payment {payment_id} 없음")
+        if payment.status == PaymentStatus.SUCCEEDED:
+            return {"payment_id": payment_id, "status": "already_succeeded"}
+        if payment.status != PaymentStatus.PENDING:
+            raise PaymentError(f"payment status invalid: {payment.status}")
+
+        adapter = get_adapter(payment.provider)
+        result = await adapter.confirm(
+            provider_session_id=payment.provider_tx_id or "",
+            amount_krw=payment.amount_krw,
+            extra=extra,
+        )
+
+        # 금액 위변조 차단
+        if result.amount_krw != payment.amount_krw:
+            payment.status = PaymentStatus.FAILED
+            await session.commit()
+            raise PaymentError(
+                f"금액 불일치: 요청 {payment.amount_krw} vs 결제 {result.amount_krw}",
+            )
+
+        now = datetime.now(UTC)
+        payment.status = PaymentStatus.SUCCEEDED
+        payment.paid_at = now
+        payment.provider_tx_id = result.provider_tx_id
+        payment.method = result.method
+        payment.receipt_url = result.receipt_url
+
+        sub = await session.get(Subscription, payment.subscription_id)
+        if sub:
+            sub.status = SubscriptionStatus.ACTIVE
+            sub.started_at = now
+            sub.current_period_end = now + timedelta(days=30)
+
+        await session.commit()
+        return {
+            "payment_id": payment_id,
+            "subscription_id": payment.subscription_id,
+            "status": "succeeded",
+            "amount_krw": payment.amount_krw,
+            "provider_tx_id": result.provider_tx_id,
+            "receipt_url": result.receipt_url,
+        }
+
+
+async def refund_payment(
+    payment_id: int,
+    reason: str,
+    amount_krw: int | None = None,
+) -> dict[str, Any]:
+    """환불 — 게이트웨이 호출 + payment 상태 갱신."""
+    _db_required()
+
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from src.core.db import _session_factory
+    from src.models.db_models import (
+        Payment,
+        PaymentStatus,
+        Subscription,
+        SubscriptionStatus,
+    )
+
+    session: AsyncSession
+    async with _session_factory()() as session:
+        payment = await session.get(Payment, payment_id)
+        if payment is None:
+            raise PaymentError(f"payment {payment_id} 없음")
+        if payment.status not in (PaymentStatus.SUCCEEDED, PaymentStatus.PARTIALLY_REFUNDED):
+            raise PaymentError(f"환불 불가 상태: {payment.status}")
+
+        refund_amount = amount_krw if amount_krw is not None else (
+            payment.amount_krw - payment.refund_amount_krw
+        )
+        if refund_amount <= 0:
+            raise PaymentError("환불 금액은 0보다 커야 합니다.")
+        if refund_amount > payment.amount_krw - payment.refund_amount_krw:
+            raise PaymentError("이미 환불된 금액을 초과")
+
+        adapter = get_adapter(payment.provider)
+        await adapter.refund(payment.provider_tx_id or "", refund_amount, reason)
+
+        now = datetime.now(UTC)
+        payment.refund_amount_krw += refund_amount
+        payment.refunded_at = now
+        if payment.refund_amount_krw >= payment.amount_krw:
+            payment.status = PaymentStatus.REFUNDED
+            sub = await session.get(Subscription, payment.subscription_id)
+            if sub:
+                sub.status = SubscriptionStatus.REFUNDED
+                sub.canceled_at = now
+        else:
+            payment.status = PaymentStatus.PARTIALLY_REFUNDED
+
+        await session.commit()
+        return {
+            "payment_id": payment_id,
+            "refund_amount_krw": refund_amount,
+            "total_refunded_krw": payment.refund_amount_krw,
+            "status": payment.status,
+        }
+
+
+async def set_autorenew(subscription_id: int, enabled: bool) -> bool:
+    """자동갱신 opt-in/out — BM v2 가드."""
+    _db_required()
+
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from src.core.db import _session_factory
+    from src.models.db_models import Subscription
+
+    session: AsyncSession
+    async with _session_factory()() as session:
+        sub = await session.get(Subscription, subscription_id)
+        if sub is None:
+            return False
+        sub.autorenew = enabled
+        sub.autorenew_optin_at = datetime.now(UTC) if enabled else None
+        await session.commit()
+        return True
