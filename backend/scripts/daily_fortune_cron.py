@@ -46,6 +46,7 @@ from src.engine.daily_fortune import (  # noqa: E402
     compute_daily_fortune,
 )
 from src.engine.schema import FourPillars  # noqa: E402
+from src.services.birth_record_service import safe_decrypt_to_pillars  # noqa: E402
 from src.services.expo_push_service import (  # noqa: E402
     PushMessage,
     PushSendResult,
@@ -134,10 +135,12 @@ async def fetch_targets(hour_filter: int | None) -> list[dict]:
 def _decrypt_to_pillars(birth_record) -> FourPillars | None:
     """birth_record.encrypted_payload → FourPillars.
 
-    Sprint 1-2 PII_ENCRYPTION_KEY 활성 후 실 복호화 + saju_service 호출.
-    현재는 stub — 항상 None (cron 발송 안 됨, 안전).
+    PII_ENCRYPTION_KEY 환경변수 + 정상 payload 모두 충족 시 FourPillars 반환.
+    하나라도 실패하면 None (cron 은 해당 사용자만 스킵, 다른 사용자에 영향 없음).
     """
-    return None
+    if not birth_record or not birth_record.encrypted_payload:
+        return None
+    return safe_decrypt_to_pillars(birth_record.encrypted_payload)
 
 
 def build_message(target: dict, fortune: DailyFortune) -> PushMessage | None:

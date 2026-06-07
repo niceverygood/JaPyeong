@@ -17,6 +17,7 @@ dependencies = [
     "anthropic>=0.34",
     "pgvector>=0.3",
     "sxtwl>=2.0",
+    "cryptography>=42.0",
 ]
 
 [project.optional-dependencies]
