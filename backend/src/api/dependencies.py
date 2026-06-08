@@ -31,6 +31,17 @@ def _allow_x_user_id_fallback() -> bool:
     return os.environ.get("ALLOW_X_USER_ID", "false").lower() in ("1", "true", "yes")
 
 
+def _map_auth_error(e: AuthError) -> str:
+    """jose 라이브러리 영문 메시지를 사용자용 한국어로 매핑.
+
+    구체 원인을 클라이언트에 누출하지 않음.
+    """
+    msg = str(e).lower()
+    if "expired" in msg or "만료" in msg:
+        return "세션이 만료되었습니다. 다시 로그인해주세요."
+    return "인증에 실패했습니다. 다시 로그인해주세요."
+
+
 async def get_current_user_id(
     authorization: Annotated[str | None, Header()] = None,
     x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
@@ -44,7 +55,7 @@ async def get_current_user_id(
         except AuthError as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=str(e),
+                detail=_map_auth_error(e),
                 headers={"WWW-Authenticate": "Bearer"},
             ) from e
 

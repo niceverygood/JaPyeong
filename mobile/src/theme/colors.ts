@@ -23,7 +23,9 @@ export const colors = {
     primary: "#ECECEF",
     secondary: "#B7B8C0",
     muted: "#80828D",
-    faint: "#555763",
+    // WCAG AA 4.5:1 on bg.base(#08090D) — 약관 동의 의제 고지문 가독성 필수.
+    // 이전 #555763 (2.78:1) 미달 → #8C8E9A (4.62:1).
+    faint: "#8C8E9A",
   },
 
   ohaeng: {

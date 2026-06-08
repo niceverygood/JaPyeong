@@ -51,8 +51,22 @@ export function LandingScreen() {
               </Text>
               <Text className="mt-0.5 font-sans text-xs text-ink-muted">JAPYEONG</Text>
             </View>
-            <View className="rounded-md border border-line bg-bg-card px-3 py-1.5">
-              <Text className="font-sans text-xs text-gold">명리 AI 자문</Text>
+            <View className="flex-row items-center gap-2">
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  // dynamic import 로 순환 의존 차단
+                  const { useAuthStore } = require("@/stores/authStore");
+                  const token = useAuthStore.getState().token;
+                  navigation.navigate(token ? "Profile" : "AuthLanding");
+                }}
+                className="rounded-md border border-line bg-bg-card px-3 py-1.5 active:opacity-80"
+              >
+                <Text className="font-sans text-xs text-gold">내 계정</Text>
+              </Pressable>
+              <View className="rounded-md border border-line bg-bg-card px-3 py-1.5">
+                <Text className="font-sans text-xs text-gold">명리 AI 자문</Text>
+              </View>
             </View>
           </View>
 

@@ -12,6 +12,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ApiError } from "@/api/client";
 import { PaywallProvider, usePaywall } from "@/components/primitives/Paywall";
 import { RootNavigator } from "@/navigation/RootNavigator";
+import { useAuthStore } from "@/stores/authStore";
 import { colors } from "@/theme";
 
 // 폰트 로드 동안 스플래시 유지
@@ -41,13 +42,21 @@ export default function App() {
         },
   );
 
+  const hydrate = useAuthStore((s) => s.hydrate);
+  const authReady = useAuthStore((s) => s.ready);
+
+  // 부팅 시 1회만 JWT hydrate (secureStorage → 메모리 캐시)
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    void hydrate();
+  }, [hydrate]);
+
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && authReady) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, authReady]);
 
-  if (!fontsLoaded && !fontError) {
+  if ((!fontsLoaded && !fontError) || !authReady) {
     return <View style={{ flex: 1, backgroundColor: colors.bg.base }} />;
   }
 

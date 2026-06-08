@@ -17,8 +17,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 
 from src.api.dependencies import get_current_user_id
+from src.core.config import get_settings
 from src.security.jwt_auth import create_access_token
 from src.services.user_service import (
+    DatabaseUnavailableError,
     UserServiceError,
     get_active_user,
     login_with_oauth,
@@ -40,6 +42,7 @@ class SignupRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
+    # 로그인 측은 min_length=1 — legacy 8자 미만 비번 계정 호환
     email: EmailStr
     password: str = Field(min_length=1, max_length=72)
 
@@ -76,6 +79,11 @@ async def signup_endpoint(body: SignupRequest) -> AuthResponse:
             phone=body.phone,
             marketing_consent=body.marketing_consent,
         )
+    except DatabaseUnavailableError as e:
+        raise HTTPException(
+            status_code=503,
+            detail="일시적으로 가입할 수 없습니다. 잠시 후 다시 시도해주세요.",
+        ) from e
     except UserServiceError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     return AuthResponse(**result, is_new=True)
@@ -85,6 +93,11 @@ async def signup_endpoint(body: SignupRequest) -> AuthResponse:
 async def login_endpoint(body: LoginRequest) -> AuthResponse:
     try:
         result = await login_with_password(body.email, body.password)
+    except DatabaseUnavailableError as e:
+        raise HTTPException(
+            status_code=503,
+            detail="일시적으로 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.",
+        ) from e
     except UserServiceError as e:
         raise HTTPException(status_code=401, detail=str(e)) from e
     return AuthResponse(**result, is_new=False)
@@ -92,6 +105,12 @@ async def login_endpoint(body: LoginRequest) -> AuthResponse:
 
 @router.post("/oauth", response_model=AuthResponse)
 async def oauth_endpoint(body: OAuthRequest) -> AuthResponse:
+    # placeholder OAuth — provider 토큰 검증 미구현. 프로덕션 차단.
+    if not get_settings().oauth_placeholder_enabled:
+        raise HTTPException(
+            status_code=503,
+            detail="OAuth 로그인은 곧 제공됩니다.",
+        )
     try:
         result = await login_with_oauth(
             oauth_provider=body.provider,
@@ -99,6 +118,11 @@ async def oauth_endpoint(body: OAuthRequest) -> AuthResponse:
             email=body.email,
             name=body.name,
         )
+    except DatabaseUnavailableError as e:
+        raise HTTPException(
+            status_code=503,
+            detail="일시적으로 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.",
+        ) from e
     except UserServiceError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     return AuthResponse(**result)

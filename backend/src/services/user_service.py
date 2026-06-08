@@ -18,12 +18,19 @@ from src.security.jwt_auth import (
 
 
 class UserServiceError(Exception):
-    """회원 가입·로그인·탈퇴 도메인 에러."""
+    """회원 가입·로그인·탈퇴 도메인 에러 — 사용자에게 노출 가능."""
+
+
+class DatabaseUnavailableError(UserServiceError):
+    """DB 미설정/장애 — 운영 에러. 사용자에게 인프라명 노출 X.
+
+    라우터에서 잡아 503 + generic 메시지로 변환.
+    """
 
 
 def _db_required() -> None:
     if not os.environ.get("DATABASE_URL"):
-        raise UserServiceError("DATABASE_URL 미설정 — 회원 기능 사용 불가.")
+        raise DatabaseUnavailableError("DATABASE_URL 미설정")
 
 
 async def signup(

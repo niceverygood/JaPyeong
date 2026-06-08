@@ -1,0 +1,162 @@
+/** 가격표 + 플랜 선택 → 결제 시작.
+ *
+ * BM v2:
+ *   - basic 49k / standard 149k / premium 390k / family 590k
+ *   - 자동갱신 디폴트 OFF (opt-in 별도 토글)
+ *   - 다크패턴 없음: 추천 플랜 강조 X, 사용자 선택 그대로
+ *
+ * 결제 흐름:
+ *   PlansScreen → 플랜·게이트웨이 선택 → CheckoutScreen (WebView/redirect_url)
+ *   → 결제 게이트웨이 콜백 → ConfirmScreen
+ */
+
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { fetchPlans, type Plan, type Provider } from "@/api/payment";
+import { Button } from "@/components/primitives/Button";
+import { Card } from "@/components/primitives/Card";
+import type { RootStackParamList } from "@/navigation/types";
+import { colors } from "@/theme";
+
+type Nav = NativeStackNavigationProp<RootStackParamList, "Plans">;
+
+const PROVIDERS: { code: Provider; label: string }[] = [
+  { code: "toss", label: "토스페이먼츠" },
+  { code: "kakao", label: "카카오페이" },
+];
+
+function formatKrw(n: number): string {
+  return n.toLocaleString("ko-KR") + "원";
+}
+
+export function PlansScreen() {
+  const navigation = useNavigation<Nav>();
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<Provider>("toss");
+
+  const { data: plans, isLoading, error } = useQuery({
+    queryKey: ["plans"],
+    queryFn: fetchPlans,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const onProceed = () => {
+    if (!selectedPlan) return;
+    navigation.navigate("Checkout", {
+      plan: selectedPlan,
+      provider: selectedProvider,
+    });
+  };
+
+  return (
+    <SafeAreaView className="flex-1 bg-bg-base">
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
+        <Text className="mt-4 mb-2 font-serif text-2xl text-ink">자평 플랜</Text>
+        <Text className="mb-6 font-sans text-sm text-ink-secondary">
+          큰 결정 앞에서, 자평이 함께합니다.{"\n"}
+          <Text className="text-ink-muted">자동갱신은 꺼져 있습니다. 필요할 때만 결제하세요.</Text>
+        </Text>
+
+        {isLoading && (
+          <Card>
+            <View className="p-4">
+              <Text className="font-sans text-sm text-ink-secondary">가격표 불러오는 중…</Text>
+            </View>
+          </Card>
+        )}
+
+        {error && (
+          <Card>
+            <View className="p-4">
+              <Text className="font-sans text-sm text-state-warning">
+                가격표 불러오기 실패. 잠시 후 다시 시도해주세요.
+              </Text>
+            </View>
+          </Card>
+        )}
+
+        {plans && (
+          <View className="gap-3">
+            {(Object.entries(plans) as [Plan, typeof plans[Plan]][])
+              .sort((a, b) => a[1].price_krw - b[1].price_krw)
+              .map(([code, info]) => {
+                const isSelected = selectedPlan === code;
+                return (
+                  <Pressable
+                    key={code}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: isSelected }}
+                    onPress={() => setSelectedPlan(code)}
+                    className={`rounded-lg border bg-bg-card active:opacity-90 ${
+                      isSelected ? "border-gold" : "border-line"
+                    }`}
+                  >
+                    <View className="p-4">
+                      <View className="flex-row items-center justify-between">
+                        <Text className="font-serif text-lg text-ink">
+                          {info.label}
+                        </Text>
+                        <Text className="font-serif text-lg text-gold">
+                          {formatKrw(info.price_krw)}
+                          <Text className="font-sans text-sm text-ink-muted">{info.monthly ? " / 월" : ""}</Text>
+                        </Text>
+                      </View>
+                      <Text className="mt-1 font-sans text-sm text-ink-secondary">
+                        {info.description}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+          </View>
+        )}
+
+        {/* 게이트웨이 선택 */}
+        {selectedPlan && (
+          <View className="mt-6">
+            <Text className="mb-2 font-sans text-sm text-ink-muted">결제 수단</Text>
+            <View className="flex-row gap-2">
+              {PROVIDERS.map((p) => {
+                const sel = selectedProvider === p.code;
+                return (
+                  <Pressable
+                    key={p.code}
+                    onPress={() => setSelectedProvider(p.code)}
+                    className={`flex-1 rounded-lg border px-3 py-3 active:opacity-90 ${
+                      sel ? "border-gold bg-bg-card" : "border-line"
+                    }`}
+                  >
+                    <Text
+                      className="text-center font-sans text-sm"
+                      style={{ color: sel ? colors.gold.primary : colors.text.secondary }}
+                    >
+                      {p.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        <View className="mt-8">
+          <Button
+            label={selectedPlan ? `${selectedPlan.toUpperCase()} 결제하기` : "플랜을 선택하세요"}
+            onPress={onProceed}
+            disabled={!selectedPlan}
+          />
+        </View>
+
+        <Text className="mt-6 text-center font-sans text-[11px] leading-[16px] text-ink-faint">
+          결제 진행 시 <Text className="text-ink-muted">결제·환불 정책</Text>에 동의한 것으로 봅니다.{"\n"}
+          7일 내 청약철회 가능 (전자상거래법).
+        </Text>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
