@@ -19,6 +19,8 @@ from src.services.payment_service import (
     MockPaymentAdapter,
     PaymentError,
     TossPaymentAdapter,
+    cancel_recurring,
+    charge_recurring_subscription,
     confirm_payment,
     create_checkout,
     get_adapter,
@@ -207,3 +209,125 @@ async def test_kakao_ready_success() -> None:
     assert s.provider == "kakao"
     assert s.provider_session_id == "T1234"
     assert s.redirect_url == "https://pay.kakao/redirect"
+
+
+# ── Kakao 정기결제(subscription) ──────────────────────────
+def test_get_adapter_kakao_reads_subscription_cid() -> None:
+    with patch.dict(
+        os.environ,
+        {
+            "KAKAO_PAY_ADMIN_KEY": "kk_admin",
+            "KAKAO_PAY_CID": "TC0ONETIME",
+            "KAKAO_PAY_CID_SUBSCRIPTION": "CT_SUB_REAL",
+        },
+        clear=False,
+    ):
+        adapter = get_adapter("kakao")
+    assert isinstance(adapter, KakaoPayAdapter)
+    assert adapter.subscription_cid == "CT_SUB_REAL"
+
+
+async def test_kakao_recurring_checkout_uses_subscription_cid() -> None:
+    import httpx
+    adapter = KakaoPayAdapter(admin_key="kk", cid="TC0ONETIME", subscription_cid="CT_SUB")
+    mock_resp = httpx.Response(
+        200,
+        json={"tid": "T1", "next_redirect_pc_url": "https://pay.kakao/r"},
+        request=httpx.Request("POST", "https://kapi.kakao.com/v1/payment/ready"),
+    )
+    with patch("httpx.AsyncClient.post", AsyncMock(return_value=mock_resp)) as post:
+        await adapter.create_checkout(
+            amount_krw=49_000, order_name="자평", order_id="jp_1_1",
+            success_url="https://x/ok", fail_url="https://x/no", recurring=True,
+        )
+    assert post.call_args.kwargs["data"]["cid"] == "CT_SUB"
+
+
+async def test_kakao_confirm_extracts_sid_when_recurring() -> None:
+    import httpx
+    adapter = KakaoPayAdapter(admin_key="kk", subscription_cid="CT_SUB")
+    mock_resp = httpx.Response(
+        200,
+        json={"aid": "A1", "sid": "SID_ABC", "amount": {"total": 49_000}},
+        request=httpx.Request("POST", "https://kapi.kakao.com/v1/payment/approve"),
+    )
+    with patch("httpx.AsyncClient.post", AsyncMock(return_value=mock_resp)) as post:
+        r = await adapter.confirm(
+            provider_session_id="T1", amount_krw=49_000,
+            extra={"pg_token": "pg", "recurring": True},
+        )
+    assert post.call_args.kwargs["data"]["cid"] == "CT_SUB"
+    assert r.billing_sid == "SID_ABC"
+    assert r.amount_krw == 49_000
+
+
+async def test_kakao_pay_subscription_charges_with_sid() -> None:
+    import httpx
+    adapter = KakaoPayAdapter(admin_key="kk", subscription_cid="CT_SUB")
+    mock_resp = httpx.Response(
+        200,
+        json={"aid": "A2", "amount": {"total": 49_000}},
+        request=httpx.Request("POST", "https://kapi.kakao.com/v1/payment/subscription"),
+    )
+    with patch("httpx.AsyncClient.post", AsyncMock(return_value=mock_resp)) as post:
+        r = await adapter.pay_subscription(
+            sid="SID_ABC", amount_krw=49_000, order_name="자평",
+            order_id="jp_1_2", user_id="1",
+        )
+    data = post.call_args.kwargs["data"]
+    assert data["sid"] == "SID_ABC"
+    assert data["cid"] == "CT_SUB"
+    assert r.provider_tx_id == "A2"
+    assert r.billing_sid == "SID_ABC"
+
+
+async def test_kakao_pay_subscription_http_error() -> None:
+    import httpx
+    adapter = KakaoPayAdapter(admin_key="kk")
+    mock_resp = httpx.Response(
+        400, text='{"code":-9798}',
+        request=httpx.Request("POST", "https://kapi.kakao.com/v1/payment/subscription"),
+    )
+    with patch("httpx.AsyncClient.post", AsyncMock(return_value=mock_resp)):
+        with pytest.raises(PaymentError, match="정기청구 실패"):
+            await adapter.pay_subscription(
+                sid="SID", amount_krw=49_000, order_name="자평",
+                order_id="jp_1_2", user_id="1",
+            )
+
+
+async def test_kakao_inactivate_subscription() -> None:
+    import httpx
+    adapter = KakaoPayAdapter(admin_key="kk", subscription_cid="CT_SUB")
+    mock_resp = httpx.Response(
+        200,
+        json={"sid": "SID_ABC", "status": "INACTIVE"},
+        request=httpx.Request(
+            "POST", "https://kapi.kakao.com/v1/payment/manage/subscription/inactive",
+        ),
+    )
+    with patch("httpx.AsyncClient.post", AsyncMock(return_value=mock_resp)) as post:
+        out = await adapter.inactivate_subscription("SID_ABC")
+    assert post.call_args.kwargs["data"] == {"cid": "CT_SUB", "sid": "SID_ABC"}
+    assert out["status"] == "INACTIVE"
+
+
+async def test_mock_recurring_confirm_returns_sid() -> None:
+    adapter = MockPaymentAdapter()
+    r = await adapter.confirm("mock_T1", 49_000, extra={"recurring": True})
+    assert r.billing_sid == "mock_sid_mock_T1"
+    r2 = await adapter.confirm("mock_T1", 49_000, extra={})
+    assert r2.billing_sid is None
+
+
+# ── 정기결제 도메인: DB 의존 분기 ─────────────────────────
+async def test_charge_recurring_requires_db() -> None:
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(PaymentError, match="DATABASE_URL"):
+            await charge_recurring_subscription(1)
+
+
+async def test_cancel_recurring_requires_db() -> None:
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(PaymentError, match="DATABASE_URL"):
+            await cancel_recurring(1)

@@ -1,0 +1,127 @@
+name: Scheduled crons (자평 운영)
+
+# 운영 배치 cron 일괄 등록.
+# Vercel 서버리스(60s 타임아웃 + api/index.py 가 DB import 회피)에는 부적합하여
+# GitHub Actions 에서 backend/scripts/*.py 를 직접 실행한다.
+#
+# 스케줄은 모두 UTC (GitHub Actions 기준). 괄호 안은 KST(UTC+9) 환산.
+#   '0 * * * *'   매시간        → 일진 푸시(daily_fortune, KST 시각 발송) + 예산 알림
+#   '0 */6 * * *' 6시간 간격     → 결정 follow-up
+#   '0 16 * * *'  (KST 01:00)    → 정기구독 자동청구
+#   '0 0 1 * *'   매월 1일(KST 09:00) → TM 파트너 월간 정산
+#
+# 필요한 Repository Secrets (Settings → Secrets and variables → Actions):
+#   DATABASE_URL                (필수, 전 cron)
+#   PII_ENCRYPTION_KEY          (일진 — 생년 복호화)
+#   ANTHROPIC_API_KEY           (일진 — 메시지 생성)
+#   KAKAO_PAY_ADMIN_KEY / KAKAO_PAY_CID / KAKAO_PAY_CID_SUBSCRIPTION  (정기청구)
+#   SOLAPI_API_KEY / SOLAPI_API_SECRET / SOLAPI_FROM_NUMBER / KAKAO_PF_ID / KAKAO_TEMPLATE_FOLLOWUP (follow-up)
+#   ANTHROPIC_ADMIN_API_KEY / ANTHROPIC_ORG_ID / SLACK_WEBHOOK_URL    (예산 알림)
+#   SETTLEMENT_WEBHOOK_URL      (정산, 옵션)
+# 미설정 시 각 스크립트는 경고 후 skip(또는 더미 보고)하므로 안전하다.
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+    - cron: "0 */6 * * *"
+    - cron: "0 16 * * *"
+    - cron: "0 0 1 * *"
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "수동 실행할 cron"
+        default: "all"
+        type: choice
+        options:
+          - all
+          - daily_fortune
+          - budget_alert
+          - decision_followup
+          - subscription_renewal
+          - tm_settlement
+
+concurrency:
+  group: japyeong-cron-${{ github.event.schedule || github.event.inputs.job }}
+  cancel-in-progress: false
+
+jobs:
+  cron:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Run scheduled cron(s)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PII_ENCRYPTION_KEY: ${{ secrets.PII_ENCRYPTION_KEY }}
+          PII_ENCRYPTION_KEYS_OLD: ${{ secrets.PII_ENCRYPTION_KEYS_OLD }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          KAKAO_PAY_ADMIN_KEY: ${{ secrets.KAKAO_PAY_ADMIN_KEY }}
+          KAKAO_PAY_CID: ${{ secrets.KAKAO_PAY_CID }}
+          KAKAO_PAY_CID_SUBSCRIPTION: ${{ secrets.KAKAO_PAY_CID_SUBSCRIPTION }}
+          SOLAPI_API_KEY: ${{ secrets.SOLAPI_API_KEY }}
+          SOLAPI_API_SECRET: ${{ secrets.SOLAPI_API_SECRET }}
+          SOLAPI_FROM_NUMBER: ${{ secrets.SOLAPI_FROM_NUMBER }}
+          KAKAO_PF_ID: ${{ secrets.KAKAO_PF_ID }}
+          KAKAO_TEMPLATE_FOLLOWUP: ${{ secrets.KAKAO_TEMPLATE_FOLLOWUP }}
+          ANTHROPIC_ADMIN_API_KEY: ${{ secrets.ANTHROPIC_ADMIN_API_KEY }}
+          ANTHROPIC_ORG_ID: ${{ secrets.ANTHROPIC_ORG_ID }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SETTLEMENT_WEBHOOK_URL: ${{ secrets.SETTLEMENT_WEBHOOK_URL }}
+        run: |
+          cd backend
+          set -u
+          FAIL=0
+          SCHED="${{ github.event.schedule }}"
+          DISPATCH="${{ github.event_name == 'workflow_dispatch' }}"
+          JOB="${{ github.event.inputs.job || 'all' }}"
+
+          # want <이 cron의 schedule> <job 이름> → 실행 대상이면 0
+          want() {
+            if [ "$DISPATCH" = "true" ]; then
+              [ "$JOB" = "all" ] || [ "$JOB" = "$2" ]
+            else
+              [ "$SCHED" = "$1" ]
+            fi
+          }
+
+          run() {
+            local label="$1" module="$2"; shift 2
+            echo "::group::$label"
+            if ! python -m "scripts.$module" "$@"; then
+              echo "::error::$label cron 실패"
+              FAIL=1
+            fi
+            echo "::endgroup::"
+          }
+
+          if want "0 * * * *" daily_fortune; then
+            run daily_fortune daily_fortune_cron --hour "$(TZ=Asia/Seoul date +%H)"
+          fi
+          if want "0 * * * *" budget_alert; then
+            run budget_alert anthropic_budget_alert
+          fi
+          if want "0 */6 * * *" decision_followup; then
+            run decision_followup decision_followup_cron
+          fi
+          if want "0 16 * * *" subscription_renewal; then
+            run subscription_renewal subscription_renewal_cron
+          fi
+          if want "0 0 1 * *" tm_settlement; then
+            run tm_settlement tm_settlement_report --all --last-month --format json
+          fi
+
+          exit $FAIL

@@ -25,8 +25,11 @@ class Settings(BaseSettings):
 
     portone_api_secret: str = ""
     portone_store_id: str = ""
-    kakao_cid: str = ""
-    kakao_admin_key: str = ""
+    # 카카오페이 — payment_service 는 os.environ 에서 직접 읽는다(어댑터 팩토리).
+    # 여기 필드는 설정 인벤토리/검증용. 단건=KAKAO_PAY_CID, 정기=KAKAO_PAY_CID_SUBSCRIPTION.
+    kakao_pay_admin_key: str = ""
+    kakao_pay_cid: str = "TC0ONETIME"
+    kakao_pay_cid_subscription: str = "TCSUBSCRIP"
 
     jwt_secret: str = "change-me-in-production"
     jwt_expire_days: int = 30

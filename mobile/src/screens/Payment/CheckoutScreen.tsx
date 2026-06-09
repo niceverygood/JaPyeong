@@ -43,6 +43,7 @@ export function CheckoutScreen() {
         provider: params.provider,
         success_url: SUCCESS_URL,
         fail_url: FAIL_URL,
+        recurring: params.recurring ?? false,
       }),
   });
 
@@ -70,6 +71,7 @@ export function CheckoutScreen() {
         <Text className="mb-2 font-serif text-2xl text-ink">결제 진행</Text>
         <Text className="mb-6 font-sans text-sm text-ink-secondary">
           {params.plan.toUpperCase()} · {labelOfProvider(params.provider)}
+          {params.recurring ? " · 매월 정기결제" : ""}
         </Text>
 
         {mutation.isPending && (

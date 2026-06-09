@@ -1,11 +1,12 @@
 """결제 라우터 — checkout / confirm / refund / autorenew.
 
 엔드포인트:
-  POST   /api/v1/payment/checkout       결제 의도 생성
-  POST   /api/v1/payment/confirm        결제 검증·구독 활성화
-  POST   /api/v1/payment/refund         환불
-  PATCH  /api/v1/payment/autorenew      자동갱신 opt-in/out
-  GET    /api/v1/payment/plans          BM v2 가격표 조회 (공개)
+  POST   /api/v1/payment/checkout         결제 의도 생성 (recurring=True 면 정기결제)
+  POST   /api/v1/payment/confirm          결제 검증·구독 활성화 (정기 시 SID 저장)
+  POST   /api/v1/payment/refund           환불
+  PATCH  /api/v1/payment/autorenew        자동갱신 opt-in/out
+  POST   /api/v1/payment/recurring/cancel 정기결제 해지 (SID 폐기)
+  GET    /api/v1/payment/plans            BM v2 가격표 조회 (공개)
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ from src.api.dependencies import get_current_user_id
 from src.services.payment_service import (
     PLAN_PRICES,
     PaymentError,
+    cancel_recurring,
     confirm_payment,
     create_checkout,
     refund_payment,
@@ -35,6 +37,8 @@ class CheckoutRequest(BaseModel):
     fail_url: HttpUrl
     channel: str = Field(default="direct", max_length=32)
     tm_partner_code: str | None = Field(default=None, max_length=40)
+    # 정기결제(자동청구) 여부 — 카카오페이 SID 발급. 선택 = 자동갱신 opt-in.
+    recurring: bool = False
 
 
 class CheckoutResponse(BaseModel):
@@ -44,6 +48,7 @@ class CheckoutResponse(BaseModel):
     redirect_url: str
     provider: str
     provider_session_id: str
+    recurring: bool = False
 
 
 class ConfirmRequest(BaseModel):
@@ -71,6 +76,11 @@ class RefundRequest(BaseModel):
 class AutorenewRequest(BaseModel):
     subscription_id: int
     enabled: bool
+
+
+class CancelRecurringRequest(BaseModel):
+    subscription_id: int
+    reason: str = Field(default="user_request", max_length=200)
 
 
 @router.get("/plans")
@@ -106,6 +116,7 @@ async def checkout_endpoint(
             fail_url=str(body.fail_url),
             channel=body.channel,
             tm_partner_code=body.tm_partner_code,
+            recurring=body.recurring,
         )
     except PaymentError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -149,3 +160,18 @@ async def autorenew_endpoint(
     if not ok:
         raise HTTPException(status_code=404, detail="구독을 찾을 수 없습니다.")
     return {"subscription_id": body.subscription_id, "autorenew": body.enabled}
+
+
+@router.post("/recurring/cancel")
+async def cancel_recurring_endpoint(
+    body: CancelRecurringRequest,
+    user_id: int = Depends(get_current_user_id),
+) -> dict[str, Any]:
+    """정기결제 해지 — 카카오 SID 폐기 + 자동갱신 OFF.
+
+    구독은 current_period_end 까지 유지되고 이후 자동청구되지 않는다.
+    """
+    try:
+        return await cancel_recurring(body.subscription_id, reason=body.reason)
+    except PaymentError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e

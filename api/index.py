@@ -55,7 +55,7 @@ async def feature_status() -> dict:
         "payment_portone": bool(
             os.environ.get("PORTONE_API_SECRET") and os.environ.get("PORTONE_STORE_ID")
         ),
-        "payment_kakao": bool(os.environ.get("KAKAO_ADMIN_KEY")),
+        "payment_kakao": bool(os.environ.get("KAKAO_PAY_ADMIN_KEY")),
         "notes": [
             "saju_engine: 룰베이스 + 잠정 strength/geokguk/yongsin",
             "ai_chat: ANTHROPIC_API_KEY 설정 시 활성",

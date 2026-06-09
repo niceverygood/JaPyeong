@@ -38,6 +38,8 @@ export function PlansScreen() {
   const navigation = useNavigation<Nav>();
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<Provider>("toss");
+  // BM v2: 자동결제 디폴트 OFF (opt-in). 켜면 카카오페이 정기결제(SID)만 지원.
+  const [recurring, setRecurring] = useState(false);
 
   const { data: plans, isLoading, error } = useQuery({
     queryKey: ["plans"],
@@ -45,11 +47,21 @@ export function PlansScreen() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // 정기결제는 카카오페이 SID 만 지원 → 켜면 결제수단을 카카오로 고정.
+  const toggleRecurring = () => {
+    setRecurring((prev) => {
+      const next = !prev;
+      if (next) setSelectedProvider("kakao");
+      return next;
+    });
+  };
+
   const onProceed = () => {
     if (!selectedPlan) return;
     navigation.navigate("Checkout", {
       plan: selectedPlan,
-      provider: selectedProvider,
+      provider: recurring ? "kakao" : selectedProvider,
+      recurring,
     });
   };
 
@@ -116,8 +128,39 @@ export function PlansScreen() {
           </View>
         )}
 
-        {/* 게이트웨이 선택 */}
+        {/* 정기결제(자동결제) opt-in — BM v2: 디폴트 OFF */}
         {selectedPlan && (
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityState={{ checked: recurring }}
+            onPress={toggleRecurring}
+            className={`mt-6 flex-row items-center justify-between rounded-lg border bg-bg-card px-4 py-3 active:opacity-90 ${
+              recurring ? "border-gold" : "border-line"
+            }`}
+          >
+            <View className="flex-1 pr-3">
+              <Text className="font-sans text-sm text-ink">매월 자동결제 (카카오페이 정기결제)</Text>
+              <Text className="mt-1 font-sans text-xs text-ink-muted">
+                {recurring
+                  ? "매월 자동으로 결제됩니다. 마이페이지에서 언제든 해지할 수 있어요."
+                  : "꺼두면 매번 직접 결제합니다. 자동결제는 선택사항이에요."}
+              </Text>
+            </View>
+            <View
+              className={`h-6 w-11 justify-center rounded-full px-0.5 ${
+                recurring ? "bg-gold" : "bg-line"
+              }`}
+            >
+              <View
+                className="h-5 w-5 rounded-full bg-bg-base"
+                style={{ alignSelf: recurring ? "flex-end" : "flex-start" }}
+              />
+            </View>
+          </Pressable>
+        )}
+
+        {/* 게이트웨이 선택 (자동결제 시 카카오페이로 고정) */}
+        {selectedPlan && !recurring && (
           <View className="mt-6">
             <Text className="mb-2 font-sans text-sm text-ink-muted">결제 수단</Text>
             <View className="flex-row gap-2">
@@ -146,7 +189,11 @@ export function PlansScreen() {
 
         <View className="mt-8">
           <Button
-            label={selectedPlan ? `${selectedPlan.toUpperCase()} 결제하기` : "플랜을 선택하세요"}
+            label={
+              selectedPlan
+                ? `${selectedPlan.toUpperCase()} ${recurring ? "정기결제 시작" : "결제하기"}`
+                : "플랜을 선택하세요"
+            }
             onPress={onProceed}
             disabled={!selectedPlan}
           />

@@ -295,6 +295,8 @@ class Subscription(Base):
 
     # PortOne 결제 자동화 토큰 (PCI 범위 X)
     portone_billing_key: Mapped[str | None] = mapped_column(String(128), unique=True)
+    # 카카오페이 정기결제 SID (정기 CID 로 첫 승인 시 발급, 2회차부터 자동청구 키)
+    kakao_sid: Mapped[str | None] = mapped_column(String(128), unique=True)
 
     user: Mapped[User] = relationship(back_populates="subscriptions")
     payments: Mapped[list[Payment]] = relationship(back_populates="subscription")

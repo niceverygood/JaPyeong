@@ -24,6 +24,8 @@ export interface CheckoutRequest {
   fail_url: string;
   channel?: string;
   tm_partner_code?: string;
+  /** 정기결제(자동청구). 카카오페이 SID 발급 + 자동갱신 opt-in. */
+  recurring?: boolean;
 }
 
 export interface CheckoutResponse {
@@ -33,6 +35,7 @@ export interface CheckoutResponse {
   redirect_url: string;
   provider: string;
   provider_session_id: string;
+  recurring: boolean;
 }
 
 export interface ConfirmRequest {
@@ -63,4 +66,22 @@ export function confirmPayment(body: ConfirmRequest): Promise<ConfirmResponse> {
 
 export function setAutorenew(subscription_id: number, enabled: boolean): Promise<{ subscription_id: number; autorenew: boolean }> {
   return patch("/v1/payment/autorenew", { subscription_id, enabled });
+}
+
+export interface CancelRecurringResponse {
+  subscription_id: number;
+  status: string;
+  reason: string;
+  access_until: string | null;
+}
+
+/** 정기결제 해지 — 카카오 SID 폐기. 구독은 access_until 까지 유지. */
+export function cancelRecurring(
+  subscription_id: number,
+  reason?: string,
+): Promise<CancelRecurringResponse> {
+  return post<CancelRecurringResponse>("/v1/payment/recurring/cancel", {
+    subscription_id,
+    reason,
+  });
 }
