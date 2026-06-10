@@ -58,3 +58,8 @@ backend/data/classics/*.json
 
 # ---- Generated web app build (landing is committed at web/index.html) ----
 web/app/
+
+# ---- expo prebuild 산출물 (로컬 Android 빌드 전용 — managed workflow 유지) ----
+mobile/android/
+# ---- 스토어 업로드 바이너리 ----
+dist-store/
