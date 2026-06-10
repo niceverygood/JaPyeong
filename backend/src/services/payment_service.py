@@ -6,11 +6,12 @@
   3. webhook 또는 confirm 호출 시 결제 검증 → 활성화
   4. autorenew 는 default OFF (BM v2). opt-in 별도 API.
 
-가격 정책 (BM v2):
-  - basic    49,000원/월
-  - standard 149,000원/월
-  - premium  390,000원/월
-  - family   590,000원/월
+가격 정책 (BM v2 — 카카오페이 월 정기결제: 연회비 ÷ 12 월분할):
+  - basic    4,083원/월   (연 49,000)
+  - standard 12,417원/월  (연 149,000)
+  - premium  32,500원/월  (연 390,000)
+  - family   49,167원/월  (연 590,000)
+  ※ 카카오페이 정기결제는 연 단위 입점 불가 → 월 자동청구로 운영한다.
 
 외부 SDK 어댑터:
   - TossPaymentAdapter (실제 HTTP)
@@ -30,10 +31,10 @@ from typing import Any, Protocol
 import httpx
 
 PLAN_PRICES: dict[str, int] = {
-    "basic": 49_000,
-    "standard": 149_000,
-    "premium": 390_000,
-    "family": 590_000,
+    "basic": 4_083,      # 연 49,000 ÷ 12
+    "standard": 12_417,  # 연 149,000 ÷ 12
+    "premium": 32_500,   # 연 390,000 ÷ 12
+    "family": 49_167,    # 연 590,000 ÷ 12
 }
 
 

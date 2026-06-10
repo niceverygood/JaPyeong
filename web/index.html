@@ -444,6 +444,12 @@
   .foot-r a { color: var(--text-2); text-decoration: none; }
   .foot-r a:hover { color: var(--text); }
   @media (max-width: 600px) { .foot-r { text-align: left; } }
+  .biz-info { margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--b-subtle); font-size: 12px; color: var(--text-mut); line-height: 1.85; }
+  .biz-info .row { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+  .biz-info b { color: var(--text-2); font-weight: 500; }
+  .biz-info a { color: var(--text-2); text-decoration: none; }
+  .biz-info a:hover { color: var(--text); }
+  .biz-info .biz-disc { margin-top: 10px; color: var(--text-mut); opacity: 0.85; }
 
   /* Reveal on scroll */
   .reveal { opacity: 0; transform: translateY(16px); transition: opacity .8s ease, transform .8s ease; }
@@ -775,15 +781,15 @@
     <!-- ── 그룹 1 · 앱 자가 가입 ─────────────────────────────── -->
     <div class="pricing-block-head reveal">
       <h3 class="pricing-block-title">앱 자가 가입 (Self-serve)</h3>
-      <p class="pricing-block-sub">스스로 명식을 입력하고 자평의 AI 보조 고전 해석을 사용합니다. 자동갱신은 디폴트 OFF — 1년 후 갱신 의사를 다시 여쭙니다.</p>
+      <p class="pricing-block-sub">스스로 명식을 입력하고 자평의 AI 보조 고전 해석을 사용합니다. 매월 자동결제되는 월 구독으로, 약정 없이 언제든 해지할 수 있고 갱신 전 미리 알려드립니다.</p>
     </div>
 
     <div class="pricing-grid pricing-grid--two">
       <div class="price-card reveal" data-plan-card="basic">
         <div class="price-tier">Basic · 기본</div>
         <div class="price-name">基<span class="read">기 · 시작</span></div>
-        <div class="price-amount"><span class="num">49,000</span><span class="unit">원 / 년</span></div>
-        <div class="price-note">월 환산 4,083원 · 공정 사용 정책</div>
+        <div class="price-amount"><span class="num">4,083</span><span class="unit">원 / 월</span></div>
+        <div class="price-note">매월 자동결제 · 약정 없이 언제든 해지</div>
         <hr class="price-line"/>
         <ul class="price-feat">
           <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>명식<span class="hj-read">命式</span> 분석 + 인생 흐름 그래프</li>
@@ -798,8 +804,8 @@
         <div class="price-badge">추 천 · 推 薦</div>
         <div class="price-tier">Standard · 표준</div>
         <div class="price-name">深<span class="read">심 · 더 깊이</span></div>
-        <div class="price-amount"><span class="num">149,000</span><span class="unit">원 / 년</span></div>
-        <div class="price-note">월 환산 12,416원 · 7일 청약철회</div>
+        <div class="price-amount"><span class="num">12,417</span><span class="unit">원 / 월</span></div>
+        <div class="price-note">매월 자동결제 · 7일 청약철회 · 언제든 해지</div>
         <hr class="price-line"/>
         <ul class="price-feat">
           <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>Basic 전체 포함</li>
@@ -871,7 +877,7 @@
     <!-- 공정 사용 + 디스클레이머 -->
     <div class="reveal" style="max-width: 880px; margin: 28px auto 0; padding: 16px 20px; background: rgba(201,169,97,0.04); border: 1px solid rgba(201,169,97,0.18); border-radius: 10px; font-size: 12.5px; color: var(--text-2); line-height: 1.7;">
       <strong style="color: var(--gold); font-family: var(--myeongjo);">자평의 약속</strong><br/>
-      자평의 명리 자문은 결정의 참고 자료이며, 의학·법률·재무 결정을 대체하지 않습니다. 모든 결과에 학파별 견해를 함께 표시하고, AI 보조 고전 해석임을 명시합니다. 자동갱신은 디폴트 OFF이며 갱신 30일·7일·1일 전 3회 알림드립니다. 결제 후 7일 이내 청약철회 시 100% 환불됩니다.
+      자평의 명리 자문은 결정의 참고 자료이며, 의학·법률·재무 결정을 대체하지 않습니다. 모든 결과에 학파별 견해를 함께 표시하고, AI 보조 고전 해석임을 명시합니다. 월 구독은 매월 자동결제되며 약정 없이 언제든 해지할 수 있고, 결제 7일 전 갱신 알림을 보내드립니다. 결제 후 7일 이내 청약철회 시 100% 환불됩니다.
     </div>
   </div>
 </section>
@@ -992,7 +998,26 @@
       <a href="mailto:press@japyeong.kr">언론 문의 · press@japyeong.kr</a>
       <a href="/privacy.html">개인정보처리방침</a>
       <a href="/terms.html">이용약관</a>
+      <a href="/refund.html">취소·환불 정책</a>
     </div>
+  </div>
+
+  <!-- 전자상거래법 사업자 정보 (필수) -->
+  <div class="wrap biz-info">
+    <div class="row">
+      <span><b>상호</b> 주식회사 바틀</span>
+      <span><b>대표자</b> 한승수</span>
+      <span><b>사업자등록번호</b> 376-87-01076</span>
+      <span><b>통신판매업신고</b> 제2019-성남분당B-0177호</span>
+    </div>
+    <div class="row">
+      <span><b>주소</b> 경기도 성남시 분당구 판교로289번길 20, 2동 8층 (삼평동, 판교테크노밸리 스타트업 캠퍼스)</span>
+    </div>
+    <div class="row">
+      <span><b>고객센터</b> <a href="tel:010-2309-7443">010-2309-7443</a> (평일 10:00–18:00)</span>
+      <span><b>이메일</b> <a href="mailto:hello@japyeong.kr">hello@japyeong.kr</a></span>
+    </div>
+    <p class="biz-disc">자평은 명리학 기반 AI 의사결정 자문 서비스이며, 결과는 참고 자료로 미래를 단정하지 않습니다. 월 구독은 매월 자동결제되며 언제든 해지할 수 있습니다. 결제 후 7일 이내 청약철회 시 100% 환불됩니다.</p>
   </div>
 </footer>
 

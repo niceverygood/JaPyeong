@@ -32,15 +32,15 @@ from src.services.payment_service import (
 
 # ── 가격표 ────────────────────────────────────────────
 def test_plan_prices_bm_v2() -> None:
-    """BM v2 가격: 49k / 149k / 390k / 590k."""
-    assert PLAN_PRICES["basic"] == 49_000
-    assert PLAN_PRICES["standard"] == 149_000
-    assert PLAN_PRICES["premium"] == 390_000
-    assert PLAN_PRICES["family"] == 590_000
+    """월 정기결제 가격: 연회비 ÷ 12 (카카오페이 연 단위 입점 불가 대응)."""
+    assert PLAN_PRICES["basic"] == 4_083       # 연 49,000
+    assert PLAN_PRICES["standard"] == 12_417   # 연 149,000
+    assert PLAN_PRICES["premium"] == 32_500    # 연 390,000
+    assert PLAN_PRICES["family"] == 49_167     # 연 590,000
 
 
 def test_validate_plan_ok() -> None:
-    assert validate_plan("premium") == 390_000
+    assert validate_plan("premium") == 32_500
 
 
 def test_validate_plan_unknown() -> None:

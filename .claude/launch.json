@@ -21,6 +21,13 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "4700"],
       "port": 4700
+    },
+    {
+      "name": "landing",
+      "cwd": "web",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4710"],
+      "port": 4710
     }
   ]
 }
