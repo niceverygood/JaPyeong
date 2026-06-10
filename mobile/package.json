@@ -10,7 +10,7 @@
     "ios": "expo start --ios",
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
-    "build:web": "mkdir -p node_modules/.cache/nativewind && npx tailwindcss -i ./global.css -o node_modules/.cache/nativewind/global.css && npx expo export -p web",
+    "build:web": "mkdir -p node_modules/.cache/nativewind && npx tailwindcss -i ./global.css -o node_modules/.cache/nativewind/global.css && JAPYEONG_WEB_BUILD=1 npx expo export -p web",
     "build:ios": "eas build --platform ios --profile production",
     "build:android": "eas build --platform android --profile production",
     "build:preview": "eas build --platform all --profile preview",

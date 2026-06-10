@@ -62,9 +62,6 @@
       ],
       "expo-secure-store"
     ],
-    "experiments": {
-      "baseUrl": "/app"
-    },
     "extra": {
       "eas": {
         "projectId": "5e2260ca-fd92-4fe6-a764-3b65c7a41618"
