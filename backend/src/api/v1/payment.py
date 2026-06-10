@@ -25,6 +25,7 @@ from src.services.payment_service import (
     create_checkout,
     refund_payment,
     set_autorenew,
+    verify_iap_purchase,
 )
 
 router = APIRouter(prefix="/payment", tags=["payment"])
@@ -130,6 +131,36 @@ async def confirm_endpoint(
 ) -> ConfirmResponse:
     try:
         result = await confirm_payment(body.payment_id, extra=body.extra)
+    except PaymentError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return ConfirmResponse(**result)
+
+
+class IapVerifyRequest(BaseModel):
+    platform: Literal["ios", "android"]
+    plan: Literal["basic", "standard", "premium", "family"]
+    product_id: str = Field(min_length=1, max_length=120)
+    receipt: str = Field(min_length=1)  # iOS: base64 영수증 / Android: purchaseToken
+    transaction_id: str | None = Field(default=None, max_length=120)
+    package_name: str | None = Field(default=None, max_length=120)
+
+
+@router.post("/iap/verify", response_model=ConfirmResponse)
+async def iap_verify_endpoint(
+    body: IapVerifyRequest,
+    user_id: int = Depends(get_current_user_id),
+) -> ConfirmResponse:
+    """네이티브 인앱결제(App Store / Play) 영수증 검증 + 구독 활성화."""
+    try:
+        result = await verify_iap_purchase(
+            user_id=user_id,
+            platform=body.platform,
+            plan=body.plan,
+            product_id=body.product_id,
+            receipt=body.receipt,
+            transaction_id=body.transaction_id,
+            package_name=body.package_name,
+        )
     except PaymentError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     return ConfirmResponse(**result)

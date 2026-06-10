@@ -85,3 +85,23 @@ export function cancelRecurring(
     reason,
   });
 }
+
+// ── 네이티브 인앱결제(IAP) 영수증 검증 ─────────────────────────
+// iOS: App Store 영수증 / Android: Play 구매토큰을 서버에 보내 검증·구독 활성화.
+export interface IapVerifyRequest {
+  platform: "ios" | "android";
+  plan: Plan;
+  product_id: string;
+  /** iOS: transactionReceipt(base64) / Android: purchaseToken */
+  receipt: string;
+  transaction_id?: string;
+  /** Android 패키지명 (검증용) */
+  package_name?: string;
+}
+
+/** 스토어 영수증을 서버에서 검증하고 구독을 활성화한다. */
+export function verifyIapPurchase(
+  body: IapVerifyRequest,
+): Promise<ConfirmResponse> {
+  return post<ConfirmResponse>("/v1/payment/iap/verify", body);
+}

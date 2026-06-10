@@ -53,7 +53,8 @@
             "./assets/fonts/PretendardVariable.ttf"
           ]
         }
-      ]
+      ],
+      "react-native-iap"
     ],
     "experiments": {
       "baseUrl": "/app"

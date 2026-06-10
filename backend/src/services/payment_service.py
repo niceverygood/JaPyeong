@@ -596,6 +596,154 @@ async def confirm_payment(
         }
 
 
+# ── 네이티브 인앱결제(IAP) 영수증 검증 ────────────────────────────
+# iOS App Store / Google Play 자체 결제. 디지털 구독은 스토어 정책상 IAP 필수.
+async def _verify_apple_receipt(receipt: str, product_id: str) -> None:
+    """App Store 영수증 검증. APPLE_IAP_SHARED_SECRET 미설정 시 dev-accept."""
+    import logging
+    import os
+
+    secret = os.environ.get("APPLE_IAP_SHARED_SECRET")
+    if not secret:
+        logging.getLogger(__name__).warning(
+            "APPLE_IAP_SHARED_SECRET 미설정 — App Store 영수증 검증 생략(dev)",
+        )
+        return
+    body = {
+        "receipt-data": receipt,
+        "password": secret,
+        "exclude-old-transactions": True,
+    }
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.post("https://buy.itunes.apple.com/verifyReceipt", json=body)
+        data = r.json()
+        if data.get("status") == 21007:  # 샌드박스 영수증
+            r = await client.post(
+                "https://sandbox.itunes.apple.com/verifyReceipt", json=body,
+            )
+            data = r.json()
+    if data.get("status") != 0:
+        raise PaymentError(f"App Store 영수증 검증 실패 (status={data.get('status')})")
+    items = data.get("latest_receipt_info") or (
+        data.get("receipt", {}).get("in_app", [])
+    )
+    if not any(it.get("product_id") == product_id for it in items):
+        raise PaymentError("영수증 상품이 요청 상품과 일치하지 않습니다.")
+
+
+async def _verify_google_purchase(
+    purchase_token: str, product_id: str, package_name: str,
+) -> None:
+    """Play 구매 검증. GOOGLE_PLAY_SERVICE_ACCOUNT_JSON 미설정 시 dev-accept.
+
+    운영 전 TODO: 서비스계정 OAuth2 → androidpublisher
+    purchases.subscriptionsv2.get 로 구매토큰·만료·상태 검증.
+    """
+    import logging
+    import os
+
+    if not os.environ.get("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"):
+        logging.getLogger(__name__).warning(
+            "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON 미설정 — Play 구매 검증 생략(dev)",
+        )
+        return
+    # TODO(prod): google-auth + androidpublisher 로 실제 검증 구현
+    logging.getLogger(__name__).warning(
+        "Play 구매 검증 미구현 — 서비스계정 연동 필요 (purchase_token=%s…)",
+        purchase_token[:12],
+    )
+
+
+async def verify_iap_purchase(
+    user_id: int,
+    platform: str,
+    plan: str,
+    product_id: str,
+    receipt: str,
+    transaction_id: str | None = None,
+    package_name: str | None = None,
+) -> dict[str, Any]:
+    """스토어 영수증을 검증하고 구독을 활성화한다 (네이티브 IAP)."""
+    _db_required()
+    price = validate_plan(plan)
+
+    if platform == "ios":
+        await _verify_apple_receipt(receipt, product_id)
+        provider_name = "appstore"
+    elif platform == "android":
+        await _verify_google_purchase(
+            receipt, product_id, package_name or "com.japyeong.app",
+        )
+        provider_name = "playstore"
+    else:
+        raise PaymentError(f"지원하지 않는 platform: {platform}")
+
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from src.core.db import _session_factory
+    from src.models.db_models import (
+        Payment,
+        PaymentStatus,
+        Subscription,
+        SubscriptionStatus,
+    )
+
+    now = datetime.now(UTC)
+    session: AsyncSession
+    async with _session_factory()() as session:
+        # 동일 거래 중복 적용 차단
+        if transaction_id:
+            from sqlalchemy import select
+
+            dup = await session.scalar(
+                select(Payment).where(Payment.provider_tx_id == transaction_id),
+            )
+            if dup is not None:
+                return {
+                    "payment_id": dup.id,
+                    "subscription_id": dup.subscription_id,
+                    "status": "already_succeeded",
+                    "amount_krw": dup.amount_krw,
+                    "provider_tx_id": dup.provider_tx_id,
+                    "receipt_url": None,
+                }
+
+        sub = Subscription(
+            user_id=user_id,
+            plan=plan,
+            status=SubscriptionStatus.ACTIVE,
+            channel="self_serve",
+            price_krw=price,
+            autorenew=True,  # 스토어 구독은 자동 갱신
+            autorenew_optin_at=now,
+            started_at=now,
+            current_period_end=now + timedelta(days=30),
+        )
+        session.add(sub)
+        await session.flush()
+
+        payment = Payment(
+            subscription_id=sub.id,
+            user_id=user_id,
+            amount_krw=price,
+            status=PaymentStatus.SUCCEEDED,
+            provider=provider_name,
+            provider_tx_id=transaction_id or product_id,
+        )
+        payment.paid_at = now
+        session.add(payment)
+        await session.commit()
+
+        return {
+            "payment_id": payment.id,
+            "subscription_id": sub.id,
+            "status": "succeeded",
+            "amount_krw": price,
+            "provider_tx_id": payment.provider_tx_id,
+            "receipt_url": None,
+        }
+
+
 async def refund_payment(
     payment_id: int,
     reason: str,

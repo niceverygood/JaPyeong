@@ -14,12 +14,14 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { fetchPlans, type Plan, type Provider } from "@/api/payment";
 import { Button } from "@/components/primitives/Button";
 import { Card } from "@/components/primitives/Card";
+import { useIap } from "@/hooks/useIap";
+import { isIapPlan, isIapSupported } from "@/lib/iap";
 import type { RootStackParamList } from "@/navigation/types";
 import { colors } from "@/theme";
 
@@ -47,6 +49,14 @@ export function PlansScreen() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // 네이티브 앱(iOS·Android)에서 basic·standard 는 스토어 자체 결제(IAP) 사용.
+  const iap = useIap(() => {
+    Alert.alert("구독 완료", "구독이 활성화되었습니다.");
+    navigation.goBack();
+  });
+  const useStorePay =
+    isIapSupported && selectedPlan != null && isIapPlan(selectedPlan);
+
   // 정기결제는 카카오페이 SID 만 지원 → 켜면 결제수단을 카카오로 고정.
   const toggleRecurring = () => {
     setRecurring((prev) => {
@@ -58,12 +68,19 @@ export function PlansScreen() {
 
   const onProceed = () => {
     if (!selectedPlan) return;
+    // 네이티브: 스토어 결제(IAP) — 외부결제(카카오/토스)는 앱 내 디지털 구독에 사용 불가
+    if (useStorePay && isIapPlan(selectedPlan)) {
+      void iap.buy(selectedPlan);
+      return;
+    }
     navigation.navigate("Checkout", {
       plan: selectedPlan,
       provider: recurring ? "kakao" : selectedProvider,
       recurring,
     });
   };
+
+  const iapBusy = iap.status === "purchasing" || iap.status === "verifying";
 
   return (
     <SafeAreaView className="flex-1 bg-bg-base">
@@ -128,8 +145,8 @@ export function PlansScreen() {
           </View>
         )}
 
-        {/* 정기결제(자동결제) opt-in — BM v2: 디폴트 OFF */}
-        {selectedPlan && (
+        {/* 정기결제(자동결제) opt-in — BM v2: 디폴트 OFF. 스토어 결제(IAP)는 자동 갱신이므로 숨김 */}
+        {selectedPlan && !useStorePay && (
           <Pressable
             accessibilityRole="switch"
             accessibilityState={{ checked: recurring }}
@@ -159,8 +176,8 @@ export function PlansScreen() {
           </Pressable>
         )}
 
-        {/* 게이트웨이 선택 (자동결제 시 카카오페이로 고정) */}
-        {selectedPlan && !recurring && (
+        {/* 게이트웨이 선택 (자동결제 시 카카오페이로 고정). 네이티브 스토어 결제 시 숨김 */}
+        {selectedPlan && !recurring && !useStorePay && (
           <View className="mt-6">
             <Text className="mb-2 font-sans text-sm text-ink-muted">결제 수단</Text>
             <View className="flex-row gap-2">
@@ -187,17 +204,40 @@ export function PlansScreen() {
           </View>
         )}
 
+        {useStorePay && (
+          <Text className="mt-6 font-sans text-xs text-ink-muted">
+            {Platform.OS === "ios" ? "App Store" : "Google Play"} 결제로 진행됩니다.
+            구독은 매월 자동 갱신되며, {Platform.OS === "ios" ? "App Store 설정" : "Play 스토어 구독"}에서 언제든 해지할 수 있습니다.
+          </Text>
+        )}
+
+        {useStorePay && iap.error && (
+          <Text className="mt-3 font-sans text-sm text-state-warning">{iap.error}</Text>
+        )}
+
         <View className="mt-8">
           <Button
             label={
-              selectedPlan
-                ? `${selectedPlan.toUpperCase()} ${recurring ? "정기결제 시작" : "결제하기"}`
-                : "플랜을 선택하세요"
+              !selectedPlan
+                ? "플랜을 선택하세요"
+                : useStorePay
+                  ? iapBusy
+                    ? "처리 중…"
+                    : `${selectedPlan.toUpperCase()} 구독하기`
+                  : `${selectedPlan.toUpperCase()} ${recurring ? "정기결제 시작" : "결제하기"}`
             }
             onPress={onProceed}
-            disabled={!selectedPlan}
+            disabled={!selectedPlan || iapBusy}
           />
         </View>
+
+        {isIapSupported && (
+          <Pressable className="mt-3" onPress={() => void iap.restore()}>
+            <Text className="text-center font-sans text-xs text-ink-muted underline">
+              이전 구매 복원
+            </Text>
+          </Pressable>
+        )}
 
         <Text className="mt-6 text-center font-sans text-[11px] leading-[16px] text-ink-faint">
           결제 진행 시 <Text className="text-ink-muted">결제·환불 정책</Text>에 동의한 것으로 봅니다.{"\n"}
