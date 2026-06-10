@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>자평 구독 결제 · JAPYEONG</title>
+<meta name="robots" content="noindex"/>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --gold:#c9a961;
+    --text:#ece8e1; --text-2:#a9a7a0; --ok:#54c08a; --danger:#e0707a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:"맑은 고딕","Malgun Gothic",-apple-system,system-ui,sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:520px;margin:0 auto;padding:40px 20px 80px}
+  .brand{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:28px}
+  .brand .hanja{font-size:28px;color:var(--gold);font-weight:700;letter-spacing:2px}
+  .brand .han{font-size:13px;color:var(--text-2);letter-spacing:3px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:16px}
+  h1{font-size:19px;margin:0 0 4px}
+  .muted{color:var(--text-2);font-size:13px}
+  .plan-name{font-size:17px;font-weight:700;margin-top:4px}
+  .price{font-size:30px;font-weight:800;color:var(--gold);margin:6px 0}
+  .price .unit{font-size:14px;color:var(--text-2);font-weight:500}
+  .terms-box{font-size:12.5px;color:var(--text-2);background:rgba(201,169,97,.05);
+    border:1px solid rgba(201,169,97,.18);border-radius:10px;padding:14px 16px;margin-top:14px}
+  .terms-box b{color:var(--text)}
+  label.chk{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--text-2);margin-top:14px;cursor:pointer}
+  label.chk a{color:var(--gold)}
+  input[type=email],input[type=password]{width:100%;padding:11px 13px;margin-top:8px;
+    background:#0c0e12;border:1px solid var(--line);border-radius:9px;color:var(--text);font-size:14px}
+  .field-label{font-size:12px;color:var(--text-2);margin-top:12px}
+  button{width:100%;padding:14px;border:0;border-radius:10px;font-size:15px;font-weight:700;
+    cursor:pointer;margin-top:18px;font-family:inherit}
+  .btn-kakao{background:#FEE500;color:#191600}
+  .btn-kakao:disabled{opacity:.45;cursor:not-allowed}
+  .btn-ghost{background:transparent;color:var(--text-2);border:1px solid var(--line);font-weight:500}
+  .msg{font-size:13px;margin-top:12px;padding:11px 13px;border-radius:9px;display:none}
+  .msg.err{display:block;background:rgba(224,112,122,.1);border:1px solid rgba(224,112,122,.3);color:var(--danger)}
+  .msg.ok{display:block;background:rgba(84,192,138,.1);border:1px solid rgba(84,192,138,.3);color:var(--ok)}
+  .biz{font-size:11px;color:#6b6f78;line-height:1.8;border-top:1px solid var(--line);padding-top:18px;margin-top:8px}
+  .biz a{color:#8a8e98}
+  .center{text-align:center}
+  .step-icon{font-size:40px;text-align:center;margin-bottom:8px}
+  a.back{display:inline-block;margin-top:18px;color:var(--text-2);font-size:13px;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="/" style="text-decoration:none">
+    <div class="brand"><span class="hanja">子平</span><span class="han">JAPYEONG</span></div>
+  </a>
+
+  <!-- 결제 화면 -->
+  <div id="view-checkout" style="display:none">
+    <div class="card">
+      <h1>구독 결제</h1>
+      <p class="muted">자평 월 정기구독 · 매월 자동결제</p>
+      <div class="plan-name" id="planLabel">—</div>
+      <div class="price"><span id="planPrice">—</span><span class="unit"> 원 / 월</span></div>
+      <p class="muted" id="planDesc"></p>
+
+      <div class="terms-box">
+        <b>정기결제 안내</b><br/>
+        • 결제 시기: 구독 시작일 결제 후 매월 같은 날 자동결제<br/>
+        • 해지: 마이페이지에서 즉시 해지 가능, 다음 결제일 이후 자동 종료(추가 청구 없음)<br/>
+        • 환불: 결제 후 7일 이내·미사용 시 전액 환불 (전자상거래법 준수)<br/>
+        • 이의신청: 고객센터 010-2309-7443 / hello@japyeong.kr
+      </div>
+
+      <div id="loginBox">
+        <div class="field-label">이메일</div>
+        <input type="email" id="email" autocomplete="email" placeholder="you@example.com"/>
+        <div class="field-label">비밀번호</div>
+        <input type="password" id="password" autocomplete="current-password" placeholder="비밀번호"/>
+      </div>
+
+      <label class="chk">
+        <input type="checkbox" id="agree"/>
+        <span><a href="/terms.html" target="_blank">이용약관</a>·<a href="/refund.html" target="_blank">취소·환불 정책</a> 및 위 정기결제 조건에 동의합니다.</span>
+      </label>
+
+      <div class="msg" id="msg"></div>
+
+      <button class="btn-kakao" id="payBtn" disabled>카카오페이로 결제하기</button>
+      <div class="center"><a class="back" href="/#pricing">← 요금제 다시 보기</a></div>
+    </div>
+
+    <div class="biz">
+      <b style="color:#8a8e98">주식회사 바틀</b> · 대표 한승수 · 사업자등록번호 376-87-01076 · 통신판매업신고 제2019-성남분당B-0177호<br/>
+      경기도 성남시 분당구 판교로289번길 20, 2동 8층 · 고객센터 <a href="tel:010-2309-7443">010-2309-7443</a> · <a href="mailto:hello@japyeong.kr">hello@japyeong.kr</a>
+    </div>
+  </div>
+
+  <!-- 결제 완료 -->
+  <div id="view-done" style="display:none">
+    <div class="card center">
+      <div class="step-icon">🎉</div>
+      <h1>구독이 시작되었습니다</h1>
+      <p class="muted" id="doneMsg">결제가 완료되어 Pro 기능이 활성화되었습니다.</p>
+      <a href="/app/" style="text-decoration:none"><button class="btn-kakao">자평 시작하기</button></a>
+      <a class="back" href="/">홈으로</a>
+    </div>
+  </div>
+
+  <!-- 처리 중 -->
+  <div id="view-loading" class="card center">
+    <div class="step-icon">⏳</div>
+    <p class="muted" id="loadingMsg">결제 정보를 불러오는 중…</p>
+  </div>
+
+  <!-- 실패/취소 -->
+  <div id="view-fail" style="display:none">
+    <div class="card center">
+      <div class="step-icon">⚠️</div>
+      <h1>결제가 취소되었습니다</h1>
+      <p class="muted" id="failMsg">결제가 취소되었거나 완료되지 않았습니다. 다시 시도해 주세요.</p>
+      <a id="retryLink" href="/checkout.html" style="text-decoration:none"><button class="btn-kakao">다시 시도</button></a>
+      <a class="back" href="/#pricing">요금제 다시 보기</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "/api/v1";
+const qs = new URLSearchParams(location.search);
+const plan = (qs.get("plan") || "standard").toLowerCase();
+const step = qs.get("step");
+
+const $ = (id) => document.getElementById(id);
+const show = (id) => {
+  ["view-checkout","view-done","view-loading","view-fail"].forEach(v =>
+    $(v).style.display = (v === id) ? (v==="view-loading"?"block":"block") : "none");
+};
+function showMsg(text, kind){ const m=$("msg"); m.textContent=text; m.className="msg "+kind; }
+
+const PLAN_FALLBACK = {
+  basic:    {label:"Basic · 기본",    price:4083,  description:"사주 분석 + 일진 알림 + 월간 흐름"},
+  standard: {label:"Standard · 표준",  price:12417, description:"AI 상담·결정 도우미 무제한 + 상세 통변"},
+  premium:  {label:"Premium · 1:1",   price:32500, description:"자문위원 1:1 + 우선 매칭"},
+  family:   {label:"Family · 가족",    price:49167, description:"최대 5인 + 가족 궁합"},
+};
+
+async function loadPlan(){
+  let info = PLAN_FALLBACK[plan] || PLAN_FALLBACK.standard;
+  try{
+    const r = await fetch(`${API}/payment/plans`);
+    if(r.ok){ const data = await r.json(); if(data[plan]){
+      info = {label:data[plan].label||info.label, price:data[plan].price_krw||info.price,
+              description:data[plan].description||info.description}; }}
+  }catch(e){}
+  $("planLabel").textContent = info.label;
+  $("planPrice").textContent = info.price.toLocaleString();
+  $("planDesc").textContent = info.description;
+}
+
+function updatePayBtn(){
+  const ok = $("agree").checked && $("email").value.trim() && $("password").value;
+  $("payBtn").disabled = !ok;
+}
+
+async function startPayment(){
+  $("payBtn").disabled = true;
+  showMsg("로그인 중…","ok");
+  try{
+    // 1) 로그인 → 토큰
+    const lr = await fetch(`${API}/auth/login`,{
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({email:$("email").value.trim(), password:$("password").value})
+    });
+    if(!lr.ok){ throw new Error("로그인 실패 — 이메일/비밀번호를 확인해 주세요."); }
+    const auth = await lr.json();
+    const token = auth.token;
+    sessionStorage.setItem("jp_token", token);
+
+    // 2) 결제 의도 생성 (카카오 · 정기)
+    showMsg("카카오페이 결제창으로 이동 중…","ok");
+    const origin = location.origin;
+    const cr = await fetch(`${API}/payment/checkout`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+      body: JSON.stringify({
+        plan, provider:"kakao", recurring:true,
+        success_url:`${origin}/checkout.html?step=return&plan=${plan}`,
+        fail_url:`${origin}/checkout.html?step=fail&plan=${plan}`
+      })
+    });
+    if(!cr.ok){ const e=await cr.json().catch(()=>({})); throw new Error(e.detail||"결제 준비에 실패했습니다."); }
+    const co = await cr.json();
+    sessionStorage.setItem("jp_payment_id", co.payment_id);
+    // 3) 카카오페이 결제창으로 이동
+    location.href = co.redirect_url;
+  }catch(err){
+    showMsg(err.message||"결제 처리 중 오류가 발생했습니다.","err");
+    $("payBtn").disabled = false;
+  }
+}
+
+async function handleReturn(){
+  // 카카오 승인 복귀 → confirm
+  show("view-loading"); $("loadingMsg").textContent = "결제를 확정하는 중…";
+  const pgToken = qs.get("pg_token");
+  const paymentId = sessionStorage.getItem("jp_payment_id");
+  const token = sessionStorage.getItem("jp_token");
+  if(!pgToken || !paymentId || !token){
+    $("failMsg").textContent = "결제 세션이 만료되었습니다. 다시 시도해 주세요.";
+    show("view-fail"); return;
+  }
+  try{
+    const r = await fetch(`${API}/payment/confirm`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+      body: JSON.stringify({payment_id:Number(paymentId), extra:{pg_token:pgToken, recurring:true}})
+    });
+    if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error(e.detail||"결제 확정 실패"); }
+    sessionStorage.removeItem("jp_payment_id");
+    show("view-done");
+  }catch(err){
+    $("failMsg").textContent = err.message || "결제 확정 중 오류가 발생했습니다.";
+    show("view-fail");
+  }
+}
+
+// 라우팅
+if(step === "return"){
+  handleReturn();
+}else if(step === "fail"){
+  $("retryLink").href = `/checkout.html?plan=${plan}`;
+  show("view-fail");
+}else{
+  show("view-checkout");
+  loadPlan();
+  ["email","password"].forEach(id => $(id).addEventListener("input", updatePayBtn));
+  $("agree").addEventListener("change", updatePayBtn);
+  $("payBtn").addEventListener("click", startPayment);
+}
+</script>
+</body>
+</html>
