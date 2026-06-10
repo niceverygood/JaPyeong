@@ -54,7 +54,13 @@
           ]
         }
       ],
-      "react-native-iap"
+      [
+        "react-native-iap",
+        {
+          "paymentProvider": "Play Store"
+        }
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "baseUrl": "/app"
@@ -64,6 +70,12 @@
         "projectId": "5e2260ca-fd92-4fe6-a764-3b65c7a41618"
       }
     },
-    "owner": "malshue"
+    "owner": "malshue",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/5e2260ca-fd92-4fe6-a764-3b65c7a41618"
+    }
   }
 }
