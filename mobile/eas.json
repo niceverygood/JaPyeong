@@ -37,9 +37,9 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "PLACEHOLDER-REPLACE-WITH-APPLE-ID-EMAIL",
-        "ascAppId": "PLACEHOLDER-REPLACE-WITH-ASC-APP-ID",
-        "appleTeamId": "PLACEHOLDER-REPLACE-WITH-TEAM-ID"
+        "appleId": "dev@bottlecorp.kr",
+        "ascAppId": "6778650033",
+        "appleTeamId": "7AXRWTVSYW"
       },
       "android": {
         "serviceAccountKeyPath": "./pc-api-service-account-key.json",
