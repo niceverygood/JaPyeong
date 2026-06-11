@@ -30,7 +30,7 @@
       }
     },
     "android": {
-      "package": "com.japyeong.app",
+      "package": "kr.bottlecorp.japyeong",
       "versionCode": 1,
       "userInterfaceStyle": "dark",
       "adaptiveIcon": {
