@@ -7,5 +7,11 @@
   "functions": {
     "api/index.py": { "includeFiles": "backend/src/**" }
   },
-  "rewrites": [{ "source": "/api/(.*)", "destination": "/api/index" }]
+  "rewrites": [{ "source": "/api/(.*)", "destination": "/api/index" }],
+  "headers": [
+    {
+      "source": "/store-screenshots/(.*)",
+      "headers": [{ "key": "Access-Control-Allow-Origin", "value": "*" }]
+    }
+  ]
 }
