@@ -5,7 +5,10 @@
   Layer 2: LLM — 이 모듈 (학파 다양성·고전 인용·잠정 라벨 반영)
   Layer 3: 가드레일 — guardrails.filter_answer
 
-ANTHROPIC_API_KEY 미설정 시 호출은 RuntimeError를 던진다(API 핸들러가 503으로 변환).
+LLM 공급자 (자동 선택):
+  1) ANTHROPIC_API_KEY 설정 시 — Anthropic API 직접 호출 (기존 동작)
+  2) 없고 OPENROUTER_API_KEY 설정 시 — OpenRouter 경유 동일 Claude 모델
+  둘 다 없으면 RuntimeError(API 핸들러가 503으로 변환).
 """
 
 from __future__ import annotations
@@ -15,6 +18,7 @@ import os
 from dataclasses import dataclass
 
 import anthropic
+import httpx
 
 from src.ai.prompts import (
     COMPAT_SYSTEM_PROMPT,
@@ -54,11 +58,80 @@ class ConsultationResult:
 _VALID_CONFIDENCE = {"high", "medium", "low"}
 
 
-def _client() -> anthropic.Anthropic:
-    key = os.environ.get("ANTHROPIC_API_KEY")
-    if not key:
-        raise RuntimeError("ANTHROPIC_API_KEY 미설정 — Vercel 환경변수에 키를 추가하세요.")
-    return anthropic.Anthropic(api_key=key)
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+# 내부 모델명 → OpenRouter 슬러그 (점 표기). OPENROUTER_MODEL 로 강제 가능.
+_OPENROUTER_SLUGS = {
+    "claude-sonnet-4-6": "anthropic/claude-sonnet-4.6",
+    "claude-sonnet-4-5": "anthropic/claude-sonnet-4.6",  # 4.5 은퇴 대비 동일 계열 상위
+    "claude-haiku-4-5": "anthropic/claude-haiku-4.5",
+    "claude-opus-4-7": "anthropic/claude-opus-4.7",
+}
+
+
+def _to_openrouter_slug(model: str) -> str:
+    forced = os.environ.get("OPENROUTER_MODEL")
+    if forced:
+        return forced
+    return _OPENROUTER_SLUGS.get(model, "anthropic/claude-sonnet-4.6")
+
+
+def _complete(system: str, user_msg: str, model: str) -> tuple[str, str]:
+    """단일 LLM 완성 호출 — (응답 텍스트, 실제 사용 모델명) 반환.
+
+    공급자 선택:
+      LLM_PROVIDER=openrouter → OpenRouter 강제
+      LLM_PROVIDER=anthropic  → Anthropic 강제
+      미설정                  → ANTHROPIC_API_KEY 우선, 없으면 OpenRouter
+    """
+    provider = os.environ.get("LLM_PROVIDER", "").strip().lower()
+    anth_key = os.environ.get("ANTHROPIC_API_KEY")
+    if provider == "openrouter":
+        anth_key = None  # OpenRouter 분기로 강제
+    if anth_key:
+        client = anthropic.Anthropic(api_key=anth_key)
+        resp = client.messages.create(
+            model=model,
+            max_tokens=MAX_TOKENS,
+            temperature=TEMPERATURE,
+            system=system,
+            messages=[{"role": "user", "content": user_msg}],
+        )
+        text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+        return text, model
+
+    or_key = os.environ.get("OPENROUTER_API_KEY")
+    if or_key:
+        slug = _to_openrouter_slug(model)
+        r = httpx.post(
+            OPENROUTER_URL,
+            headers={
+                "Authorization": f"Bearer {or_key}",
+                "Content-Type": "application/json",
+                # OpenRouter 권장 식별 헤더 (대시보드 출처 표기용)
+                "HTTP-Referer": "https://ja-pyeong.vercel.app",
+                "X-Title": "Japyeong",
+            },
+            json={
+                "model": slug,
+                "max_tokens": MAX_TOKENS,
+                "temperature": TEMPERATURE,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user_msg},
+                ],
+            },
+            timeout=60,
+        )
+        if r.status_code >= 400:
+            raise RuntimeError(f"OpenRouter 호출 실패 {r.status_code}: {r.text[:200]}")
+        body = r.json()
+        text = (body.get("choices") or [{}])[0].get("message", {}).get("content", "")
+        return text, slug
+
+    raise RuntimeError(
+        "ANTHROPIC_API_KEY / OPENROUTER_API_KEY 모두 미설정 — 환경변수에 키를 추가하세요."
+    )
 
 
 def consult(natal: dict, question: str, model: str | None = None) -> ConsultationResult:
@@ -69,19 +142,12 @@ def consult(natal: dict, question: str, model: str | None = None) -> Consultatio
     natal_json = json.dumps(natal, ensure_ascii=False, default=str)
     msg = build_user_message(natal_json, question)
     mdl = model or DEFAULT_MODEL
-    client = _client()
 
     data: dict | None = None
     last_err: Exception | None = None
+    used_model = mdl
     for _ in range(RETRY_ON_PARSE_FAIL + 1):
-        resp = client.messages.create(
-            model=mdl,
-            max_tokens=MAX_TOKENS,
-            temperature=TEMPERATURE,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": msg}],
-        )
-        text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+        text, used_model = _complete(SYSTEM_PROMPT, msg, mdl)
         try:
             data = _parse_json_lenient(text)
             break
@@ -120,7 +186,7 @@ def consult(natal: dict, question: str, model: str | None = None) -> Consultatio
         follow_up_suggestions=tuple(
             str(s).strip() for s in (data.get("follow_up_suggestions") or []) if str(s).strip()
         )[:3],
-        model=mdl,
+        model=used_model,
     )
 
 
@@ -168,19 +234,12 @@ def consult_decision(
         context=context,
     )
     mdl = model or DEFAULT_MODEL
-    client = _client()
 
     data: dict | None = None
     last_err: Exception | None = None
+    used_model = mdl
     for _ in range(RETRY_ON_PARSE_FAIL + 1):
-        resp = client.messages.create(
-            model=mdl,
-            max_tokens=MAX_TOKENS,
-            temperature=TEMPERATURE,
-            system=DECISION_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": msg}],
-        )
-        text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+        text, used_model = _complete(DECISION_SYSTEM_PROMPT, msg, mdl)
         try:
             data = _parse_json_lenient(text)
             break
@@ -227,7 +286,7 @@ def consult_decision(
         follow_up_suggestions=tuple(
             str(s).strip() for s in (data.get("follow_up_suggestions") or []) if str(s).strip()
         )[:3],
-        model=mdl,
+        model=used_model,
     )
 
 
@@ -258,19 +317,12 @@ def consult_compatibility(
         question=question,
     )
     mdl = model or DEFAULT_MODEL
-    client = _client()
 
     data: dict | None = None
     last_err: Exception | None = None
+    used_model = mdl
     for _ in range(RETRY_ON_PARSE_FAIL + 1):
-        resp = client.messages.create(
-            model=mdl,
-            max_tokens=MAX_TOKENS,
-            temperature=TEMPERATURE,
-            system=COMPAT_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": msg}],
-        )
-        text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+        text, used_model = _complete(COMPAT_SYSTEM_PROMPT, msg, mdl)
         try:
             data = _parse_json_lenient(text)
             break
@@ -309,7 +361,7 @@ def consult_compatibility(
         follow_up_suggestions=tuple(
             str(s).strip() for s in (data.get("follow_up_suggestions") or []) if str(s).strip()
         )[:3],
-        model=mdl,
+        model=used_model,
     )
 
 

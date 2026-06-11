@@ -69,6 +69,8 @@ jobs:
           PII_ENCRYPTION_KEY: ${{ secrets.PII_ENCRYPTION_KEY }}
           PII_ENCRYPTION_KEYS_OLD: ${{ secrets.PII_ENCRYPTION_KEYS_OLD }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          LLM_PROVIDER: openrouter
           KAKAO_PAY_ADMIN_KEY: ${{ secrets.KAKAO_PAY_ADMIN_KEY }}
           KAKAO_PAY_CID: ${{ secrets.KAKAO_PAY_CID }}
           KAKAO_PAY_CID_SUBSCRIPTION: ${{ secrets.KAKAO_PAY_CID_SUBSCRIPTION }}
