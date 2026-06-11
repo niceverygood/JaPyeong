@@ -1,6 +1,13 @@
+# Vercel 서버리스(api/index.py) 런타임 의존성 — 라우터 import 체인 기준
 fastapi>=0.111
 pydantic>=2.7
+pydantic-settings>=2.3
 email-validator>=2.0
 sxtwl>=2.0
 anthropic>=0.34
 httpx>=0.27
+# auth 라우터 체인 (jwt_auth / user_service / pii_encryption)
+bcrypt>=4.0
+python-jose>=3.3
+cryptography>=42.0
+python-dotenv>=1.0
