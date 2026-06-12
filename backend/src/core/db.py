@@ -26,9 +26,25 @@ class Base(DeclarativeBase):
 
 @lru_cache(maxsize=1)
 def get_engine() -> AsyncEngine:
-    """첫 호출 시 엔진을 만들고 캐시 (asyncpg 등 드라이버 import는 여기서 발생)."""
+    """첫 호출 시 엔진을 만들고 캐시 (asyncpg 등 드라이버 import는 여기서 발생).
+
+    Supabase Supavisor transaction 풀러(:6543) 경유 시 asyncpg prepared
+    statement 가 풀링과 충돌하므로 캐시를 끄고 이름을 무작위화한다.
+    서버리스에서는 프로세스 내 풀 대신 NullPool — 풀링은 Supavisor 몫.
+    """
     url = get_settings().database_url
-    return create_async_engine(url, echo=False, pool_pre_ping=True)
+    kwargs: dict = {"echo": False, "pool_pre_ping": True}
+    if "+asyncpg" in url and (":6543" in url or "pooler.supabase.com" in url):
+        from uuid import uuid4
+
+        from sqlalchemy.pool import NullPool
+
+        kwargs["poolclass"] = NullPool
+        kwargs["connect_args"] = {
+            "statement_cache_size": 0,
+            "prepared_statement_name_func": lambda: f"__asyncpg_{uuid4()}__",
+        }
+    return create_async_engine(url, **kwargs)
 
 
 @lru_cache(maxsize=1)
