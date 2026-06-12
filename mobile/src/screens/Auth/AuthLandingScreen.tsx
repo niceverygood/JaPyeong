@@ -2,8 +2,7 @@
  *
  * 디자인:
  *   - 자평 정체성 유지 (자, 평 호환 표기)
- *   - 카카오/애플 우선 (한국 사용자 기준)
- *   - 이메일/비밀번호는 보조
+ *   - 이메일 가입/로그인 + 비로그인 둘러보기 (OAuth 는 실 SDK 구현 후 복원)
  *   - 워드마크에 accessibilityLabel="자평" 명시 (VoiceOver 한국어 발음)
  *   - Apple 버튼 라벨 명시 (시각·시각장애 사용자 모두 인지)
  */
@@ -49,56 +48,32 @@ export function AuthLandingScreen() {
         </View>
 
         <View className="mt-auto pb-10">
-          {/* OAuth (실 SDK 통합 전 placeholder — production 빌드에선 백엔드가 503 반환) */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="카카오로 시작하기"
-            onPress={() => navigation.navigate("Login", { provider: "kakao" })}
-            className="mb-3 h-14 items-center justify-center rounded-lg active:opacity-80"
-            style={{ backgroundColor: "#FEE500" }}
-            testID="oauth-kakao"
-          >
-            <Text className="font-sans text-base font-semibold text-black">
-              카카오로 시작
-            </Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Apple로 시작하기"
-            onPress={() => navigation.navigate("Login", { provider: "apple" })}
-            className="mb-3 h-14 items-center justify-center rounded-lg active:opacity-80"
-            style={{ backgroundColor: "#000000", borderWidth: 1, borderColor: "#222" }}
-            testID="oauth-apple"
-          >
-            <Text className="font-sans text-base font-semibold text-white">
-              Apple로 시작
-            </Text>
-          </Pressable>
-
-          {/* 구분선 */}
-          <View className="my-4 flex-row items-center">
-            <View className="h-px flex-1 bg-line" />
-            <Text className="mx-3 font-sans text-xs text-ink-muted">또는</Text>
-            <View className="h-px flex-1 bg-line" />
-          </View>
-
-          {/* 이메일 */}
+          {/* 카카오/Apple OAuth 는 실 SDK·서버 검증 구현 후 복원
+              (placeholder 상태로 노출하면 영구 503 — App Review 2.1 재거절 사유) */}
           <Button
-            label="이메일로 로그인"
-            variant="ghost"
-            onPress={() => navigation.navigate("Login", {})}
-            testID="cta-email-login"
+            label="이메일로 시작"
+            onPress={() => navigation.navigate("Signup")}
+            testID="cta-email-signup"
           />
+
+          <View className="mt-3">
+            <Button
+              label="로그인"
+              variant="ghost"
+              onPress={() => navigation.navigate("Login", {})}
+              testID="cta-email-login"
+            />
+          </View>
 
           <Pressable
             accessibilityRole="link"
-            accessibilityLabel="회원가입 화면으로 이동"
-            onPress={() => navigation.navigate("Signup")}
+            accessibilityLabel="로그인 없이 둘러보기"
+            onPress={() => navigation.navigate("Landing")}
             className="mt-3 items-center py-3"
+            testID="cta-guest-browse"
           >
             <Text className="font-sans text-sm text-ink-secondary">
-              아직 회원이 아니신가요? <Text className="text-gold">회원가입</Text>
+              로그인 없이 <Text className="text-gold">둘러보기</Text>
             </Text>
           </Pressable>
 
