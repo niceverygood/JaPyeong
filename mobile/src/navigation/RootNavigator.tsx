@@ -9,6 +9,7 @@ import { CompatibilityScreen } from "@/screens/Compatibility/CompatibilityScreen
 import { DateSelectionScreen } from "@/screens/DateSelection/DateSelectionScreen";
 import { DecisionScreen } from "@/screens/Decision/DecisionScreen";
 import { LandingScreen } from "@/screens/Landing/LandingScreen";
+import { NotificationsScreen } from "@/screens/Notifications/NotificationsScreen";
 import { OnboardingScreen } from "@/screens/Onboarding/OnboardingScreen";
 import { CheckoutScreen } from "@/screens/Payment/CheckoutScreen";
 import { PaymentResultScreen } from "@/screens/Payment/PaymentResultScreen";
@@ -87,6 +88,11 @@ export function RootNavigator() {
         name="Decision"
         component={DecisionScreen}
         options={{ title: "결정 도우미" }}
+      />
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{ title: "알림 설정" }}
       />
 
       {/* 결제 그룹 */}

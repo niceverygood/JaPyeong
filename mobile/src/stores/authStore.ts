@@ -22,6 +22,7 @@ import {
   login as apiLogin,
   oauthLogin as apiOauth,
   signup as apiSignup,
+  refreshToken as apiRefresh,
   type LoginBody,
   type MeResponse,
   type OAuthBody,
@@ -52,6 +53,8 @@ interface AuthState {
   oauthLogin: (body: OAuthBody) => Promise<void>;
   logout: () => Promise<void>;
   refreshMe: () => Promise<void>;
+  // 구독 결제·해지 직후 JWT 재발급 → tier 클레임 즉시 갱신(한도·모델 반영)
+  refreshSession: () => Promise<void>;
   clearError: () => void;
   consumeIsNewly: () => boolean;
 }
@@ -200,6 +203,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user: me });
     } catch {
       // 토큰 만료 → 401 핸들러가 처리
+    }
+  },
+
+  async refreshSession() {
+    if (!get().token) return;
+    const myGen = generation;
+    try {
+      const res = await apiRefresh(); // 서버가 현재 활성 구독 tier 로 JWT 재발급
+      if (myGen !== generation) return; // 그 사이 logout → 무시
+      await setAuthToken(res.token);
+      const cur = get().user;
+      set({
+        token: res.token,
+        user: cur ? { ...cur, tier: res.tier } : cur,
+      });
+    } catch {
+      // refresh 실패 — 기존 토큰 유지 (다음 기회에 재시도)
     }
   },
 

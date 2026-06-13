@@ -108,6 +108,11 @@ export function ProfileScreen() {
             label="구독 플랜 보기"
             onPress={() => navigation.navigate("Plans")}
           />
+          <Button
+            label="일진 알림 설정"
+            variant="ghost"
+            onPress={() => navigation.navigate("Notifications")}
+          />
           <Button label="로그아웃" variant="ghost" onPress={handleLogout} />
         </View>
 

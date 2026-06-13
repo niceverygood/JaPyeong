@@ -19,6 +19,7 @@ import {
 } from "react-native-iap";
 
 import { verifyIapPurchase, type Plan } from "@/api/payment";
+import { useAuthStore } from "@/stores/authStore";
 import {
   ANDROID_PACKAGE,
   completeTransaction,
@@ -71,6 +72,8 @@ export function useIap(onActivated?: () => void): UseIapResult {
       });
       // 서버 검증 성공 후에만 거래 종료
       await completeTransaction(purchase);
+      // 구독 활성화됨 → JWT 재발급으로 tier 즉시 반영 (한도·심층모델 잠금 해제)
+      await useAuthStore.getState().refreshSession();
       setStatus("success");
       onActivatedRef.current?.();
     } catch (e) {
