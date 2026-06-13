@@ -23,6 +23,7 @@ import { confirmPayment } from "@/api/payment";
 import { Button } from "@/components/primitives/Button";
 import { Card } from "@/components/primitives/Card";
 import type { RootStackParamList } from "@/navigation/types";
+import { useAuthStore } from "@/stores/authStore";
 
 type Nav = NativeStackNavigationProp<RootStackParamList, "PaymentResult">;
 type Route = RouteProp<RootStackParamList, "PaymentResult">;
@@ -45,6 +46,12 @@ export function PaymentResultScreen() {
           ...(params.pg_token ? { pg_token: params.pg_token } : {}),
         },
       }),
+    onSuccess: (data) => {
+      // 결제 성공 → JWT 재발급으로 tier 즉시 반영 (KakaoPay/토스 인앱 결제 경로)
+      if (data.status === "succeeded" || data.status === "already_succeeded") {
+        void useAuthStore.getState().refreshSession();
+      }
+    },
   });
 
   useEffect(() => {
