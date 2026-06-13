@@ -13,10 +13,11 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, HttpUrl
 
 from src.api.dependencies import get_current_user_id
+from src.middleware.rate_limit import get_limiter
 from src.services.payment_service import (
     PLAN_PRICES,
     PaymentError,
@@ -127,8 +128,11 @@ async def checkout_endpoint(
 @router.post("/confirm", response_model=ConfirmResponse)
 async def confirm_endpoint(
     body: ConfirmRequest,
+    request: Request,
     user_id: int = Depends(get_current_user_id),
 ) -> ConfirmResponse:
+    # 게이트웨이 검증 호출 폭주 차단 (IP 기반 — 자문 일일 한도와 분리)
+    await get_limiter().enforce_ip_only(request)
     try:
         result = await confirm_payment(body.payment_id, extra=body.extra)
     except PaymentError as e:
@@ -148,9 +152,12 @@ class IapVerifyRequest(BaseModel):
 @router.post("/iap/verify", response_model=ConfirmResponse)
 async def iap_verify_endpoint(
     body: IapVerifyRequest,
+    request: Request,
     user_id: int = Depends(get_current_user_id),
 ) -> ConfirmResponse:
     """네이티브 인앱결제(App Store / Play) 영수증 검증 + 구독 활성화."""
+    # Apple/Google 영수증 검증 호출 폭주 차단 (IP 기반)
+    await get_limiter().enforce_ip_only(request)
     try:
         result = await verify_iap_purchase(
             user_id=user_id,

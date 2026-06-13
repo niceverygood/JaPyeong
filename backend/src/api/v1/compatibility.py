@@ -12,8 +12,9 @@ from src.ai.glossary import annotate_hanja
 from src.ai.tone_down import tone_down
 from src.api.v1.chat_schemas import CitationDTO
 from src.api.v1.compat_schemas import CompatRequest, CompatResponse
-from src.middleware.rate_limit import get_limiter, resolve_tier
+from src.middleware.rate_limit import get_limiter, resolve_user_id
 from src.services import compatibility_service
+from src.services.user_service import get_user_tier
 
 router = APIRouter(prefix="/v1/compatibility", tags=["compatibility"])
 
@@ -25,7 +26,7 @@ def _post(text: str) -> str:
 
 @router.post("", response_model=CompatResponse)
 async def compatibility(req: CompatRequest, request: Request) -> CompatResponse:
-    tier = resolve_tier(request)
+    tier = await get_user_tier(resolve_user_id(request))
     await get_limiter().enforce(request, user_tier=tier)
     # 0. 위기 키워드 단축 (질문이 있을 때만)
     if req.question:

@@ -28,6 +28,9 @@ from src.security.jwt_auth import AuthError, decode_token, extract_bearer
 
 
 def _allow_x_user_id_fallback() -> bool:
+    # 프로덕션에서는 절대 허용 안 함 — X-User-Id 신원 위조(임퍼소네이션) 차단.
+    if os.environ.get("ENV", "").strip().lower() == "production":
+        return False
     return os.environ.get("ALLOW_X_USER_ID", "false").lower() in ("1", "true", "yes")
 
 

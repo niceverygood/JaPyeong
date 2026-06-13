@@ -9,8 +9,9 @@ from src.ai.glossary import annotate_hanja
 from src.ai.tone_down import tone_down
 from src.api.v1.chat_schemas import CitationDTO
 from src.api.v1.decision_schemas import DecisionRequest, DecisionResponse
-from src.middleware.rate_limit import get_limiter, resolve_tier, resolve_user_id
+from src.middleware.rate_limit import get_limiter, resolve_user_id
 from src.services import decision_log_service, saju_service
+from src.services.user_service import get_user_tier
 
 router = APIRouter(prefix="/v1/decision", tags=["decision"])
 
@@ -22,7 +23,8 @@ def _post(text: str) -> str:
 
 @router.post("", response_model=DecisionResponse)
 async def decision(req: DecisionRequest, request: Request) -> DecisionResponse:
-    tier = resolve_tier(request)
+    uid = resolve_user_id(request)
+    tier = await get_user_tier(uid)
     await get_limiter().enforce(request, user_tier=tier)
     # 0. 위기 키워드 (context + 두 옵션 description 검사)
     blob = " ".join(
@@ -82,7 +84,7 @@ async def decision(req: DecisionRequest, request: Request) -> DecisionResponse:
     # JWT 가 있으면 회원 결정으로 적립 → 사후 만족도 추적·프롬프트 보강의 복리 데이터.
     try:
         await decision_log_service.save_decision_log(
-            user_id=resolve_user_id(request),  # 비로그인은 None (기존 동작 유지)
+            user_id=uid,  # 비로그인은 None (기존 동작 유지)
             birth_record_id=None,
             decision_type="general",  # Sprint 11-12 자동 분류기
             natal=natal,

@@ -9,8 +9,9 @@ from src.ai import consultation, guardrails
 from src.ai.glossary import annotate_hanja
 from src.ai.tone_down import tone_down
 from src.api.v1.chat_schemas import ChatRequest, ChatResponse, CitationDTO
-from src.middleware.rate_limit import get_limiter, resolve_tier
+from src.middleware.rate_limit import get_limiter, resolve_user_id
 from src.services import saju_service
+from src.services.user_service import get_user_tier
 
 router = APIRouter(prefix="/v1/chat", tags=["chat"])
 
@@ -27,8 +28,8 @@ def _post(text: str) -> str:
 @router.post("", response_model=ChatResponse)
 async def chat(req: ChatRequest, request: Request) -> ChatResponse:
     # -1. Rate limit — 티어별 일일 한도(anon 5 / basic 20 / std 100 / prem·family 500)
-    # 티어는 요청 JWT 에서 해석 → 결제하면 즉시 한도 상향 + 심층 모델 적용.
-    tier = resolve_tier(request)
+    # 권한은 JWT 신원 → DB 활성구독에서 결정(클레임 미신뢰). 결제 즉시 상향, 해지 즉시 강등.
+    tier = await get_user_tier(resolve_user_id(request))
     await get_limiter().enforce(request, user_tier=tier)
     # 0. 입력 위기 키워드 검사 — 즉시 상담 안내로 단축
     pre = guardrails.check_question(req.question)

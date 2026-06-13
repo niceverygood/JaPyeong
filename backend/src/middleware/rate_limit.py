@@ -65,14 +65,8 @@ def resolve_user_id(request: Request) -> int | None:
     return claims.user_id if claims else None
 
 
-# ── 티어별 일일 한도 ─────────────────────────────────────
-TIER_DAILY: dict[str, int] = {
-    "anon": 5,        # 비회원 (Free)
-    "basic": 20,      # Basic 4.9만/년
-    "standard": 100,  # Standard 14.9만/년
-    "premium": 500,   # Premium 39만/년
-    "family": 500,    # Family 59만/년 (가족 1인 기준)
-}
+# ── 티어별 일일 한도 (core.tiers SSOT) ───────────────────
+from src.core.tiers import TIER_DAILY  # noqa: E402
 
 IP_PER_MINUTE = 60
 IP_PER_DAY = 1000
@@ -183,8 +177,11 @@ class RateLimiter:
         uid = resolve_user_id(request)
         if uid is not None:
             return str(uid)
-        # 레거시/DEV 폴백 — ALLOW_X_USER_ID 일 때만 헤더 허용
-        if os.environ.get("ALLOW_X_USER_ID", "false").lower() in ("1", "true", "yes"):
+        # 레거시/DEV 폴백 — 프로덕션 제외 + ALLOW_X_USER_ID 일 때만 헤더 허용
+        if (
+            os.environ.get("ENV", "").strip().lower() != "production"
+            and os.environ.get("ALLOW_X_USER_ID", "false").lower() in ("1", "true", "yes")
+        ):
             return request.headers.get("x-user-id")
         return None
 
@@ -234,6 +231,23 @@ class RateLimiter:
             )
 
         return None
+
+    async def enforce_ip_only(self, request: Request) -> None:
+        """IP 분당/일일 한도만 적용 — 결제 검증처럼 회원 자문 일일 카운터와
+        무관해야 하는(그러나 플러딩은 막아야 하는) 엔드포인트용 DoS 가드."""
+        ip = self._get_ip(request)
+        now = int(time.time())
+        for key, ttl, limit, window in (
+            (f"rl:ip:min:{ip}:{now // 60}", 60, IP_PER_MINUTE, 60),
+            (f"rl:ip:day:{ip}:{now // 86400}", 86400, IP_PER_DAY, 86400),
+        ):
+            n = await self.store.incr(key, ttl_seconds=ttl)
+            if n > limit:
+                raise HTTPException(
+                    status_code=429,
+                    detail="요청이 많아 잠시 후 다시 시도해 주세요.",
+                    headers={"Retry-After": str(window - (now % window))},
+                )
 
     async def enforce(self, request: Request, user_tier: str | None = None) -> None:
         """위반 시 HTTPException(429) raise. user_tier=None 이면 JWT 에서 자동 해석."""

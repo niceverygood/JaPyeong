@@ -37,18 +37,20 @@ RETRY_ON_PARSE_FAIL = 1  # Claude가 가끔 JSON을 끊기게 생성 → 1회 �
 # ── 티어별 모델 분기 (수익화: premium/family 는 심층 모델로 8배 가격 정당화) ──
 # basic/standard/anon → 표준(sonnet), premium/family → 심층(opus).
 # config.anthropic_model_deep 과 동일 기본값. OpenRouter 경유 시 _to_openrouter_slug 가 매핑.
+# 티어 집합은 core.tiers SSOT 에서 가져온다(정의 산재 방지).
+from src.core.tiers import DEEP_TIERS  # noqa: E402
+
 DEEP_MODEL = os.environ.get("ANTHROPIC_MODEL_DEEP", "claude-opus-4-7")
 DEEP_MAX_TOKENS = 3200  # 심층 티어는 더 길고 깊은 풀이 허용
-_DEEP_TIERS = frozenset({"premium", "family"})
 
 
 def _model_for_tier(user_tier: str | None) -> str:
     """티어 → 자문 모델. premium/family 는 심층 모델, 그 외 표준."""
-    return DEEP_MODEL if user_tier in _DEEP_TIERS else DEFAULT_MODEL
+    return DEEP_MODEL if user_tier in DEEP_TIERS else DEFAULT_MODEL
 
 
 def _max_tokens_for_tier(user_tier: str | None) -> int:
-    return DEEP_MAX_TOKENS if user_tier in _DEEP_TIERS else MAX_TOKENS
+    return DEEP_MAX_TOKENS if user_tier in DEEP_TIERS else MAX_TOKENS
 
 
 @dataclass(frozen=True, slots=True)
