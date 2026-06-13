@@ -13,6 +13,7 @@ import { ApiError } from "@/api/client";
 import { PaywallProvider, usePaywall } from "@/components/primitives/Paywall";
 import { RootNavigator } from "@/navigation/RootNavigator";
 import { useAuthStore } from "@/stores/authStore";
+import { useBirthStore } from "@/stores/birthStore";
 import { colors } from "@/theme";
 
 // 폰트 로드 동안 스플래시 유지
@@ -44,6 +45,8 @@ export default function App() {
 
   const hydrate = useAuthStore((s) => s.hydrate);
   const authReady = useAuthStore((s) => s.ready);
+  // 명식(secureStorage) 복원 완료 여부 — 복원 전 렌더 시 '명식 없음' 깜빡임 방지
+  const birthHydrated = useBirthStore((s) => s.hydrated);
 
   // 부팅 시 1회만 JWT hydrate (secureStorage → 메모리 캐시)
   useEffect(() => {
@@ -51,12 +54,12 @@ export default function App() {
   }, [hydrate]);
 
   useEffect(() => {
-    if ((fontsLoaded || fontError) && authReady) {
+    if ((fontsLoaded || fontError) && authReady && birthHydrated) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, fontError, authReady]);
+  }, [fontsLoaded, fontError, authReady, birthHydrated]);
 
-  if ((!fontsLoaded && !fontError) || !authReady) {
+  if ((!fontsLoaded && !fontError) || !authReady || !birthHydrated) {
     return <View style={{ flex: 1, backgroundColor: colors.bg.base }} />;
   }
 

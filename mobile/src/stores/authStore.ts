@@ -218,8 +218,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         token: res.token,
         user: cur ? { ...cur, tier: res.tier } : cur,
       });
-    } catch {
-      // refresh 실패 — 기존 토큰 유지 (다음 기회에 재시도)
+    } catch (e) {
+      // refresh 실패 — 기존 토큰 유지(다음 기회에 재시도). 권한은 서버가 DB 로
+      // 재검증하므로 치명적이지 않지만, 관측을 위해 경고는 남긴다.
+      if (__DEV__) {
+        console.warn("[auth] refreshSession 실패:", e instanceof Error ? e.message : e);
+      }
     }
   },
 
