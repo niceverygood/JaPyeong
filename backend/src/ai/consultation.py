@@ -24,8 +24,10 @@ from src.ai.prompts import (
     COMPAT_SYSTEM_PROMPT,
     DECISION_SYSTEM_PROMPT,
     SYSTEM_PROMPT,
+    TIMING_SYSTEM_PROMPT,
     build_compat_user_message,
     build_decision_user_message,
+    build_timing_user_message,
     build_user_message,
 )
 
@@ -363,6 +365,74 @@ def consult_compatibility(
     if data is None:
         raise RuntimeError(
             f"Claude 궁합 JSON 파싱 실패({RETRY_ON_PARSE_FAIL + 1}회): {last_err}"
+        )
+
+    citations = tuple(
+        Citation(source=c.get("source", "").strip(), volume=(c.get("volume") or None))
+        for c in (data.get("citations") or [])
+        if isinstance(c, dict) and c.get("source")
+    )
+    cautions = tuple(
+        str(s).strip() for s in (data.get("cautions") or []) if str(s).strip()
+    )[:3]
+    contested = tuple(
+        str(s).strip() for s in (data.get("contested") or []) if str(s).strip()
+    )[:3]
+    confidence = str(data.get("confidence", "medium")).strip().lower()
+    if confidence not in _VALID_CONFIDENCE:
+        confidence = "medium"
+
+    return ConsultationResult(
+        answer=str(data.get("answer", "")).strip(),
+        basis=str(data.get("basis", "")).strip(),
+        perspective=str(data.get("perspective", "")).strip(),
+        timing=str(data.get("timing", "")).strip(),
+        cautions=cautions,
+        citations=citations,
+        contested=contested,
+        confidence=confidence,
+        follow_up_suggestions=tuple(
+            str(s).strip() for s in (data.get("follow_up_suggestions") or []) if str(s).strip()
+        )[:3],
+        model=used_model,
+    )
+
+
+def consult_timing(
+    natal: dict,
+    event_type: str,
+    span_days: int,
+    best_summary: str,
+    avoid_summary: str,
+    model: str | None = None,
+    user_tier: str | None = None,
+) -> ConsultationResult:
+    """결정론 택일 랭킹 → Claude 타이밍 코치 내러티브(고전 인용·해석 전용)."""
+    natal_json = json.dumps(natal, ensure_ascii=False, default=str)
+    msg = build_timing_user_message(
+        natal_json=natal_json,
+        event_type=event_type,
+        span_days=span_days,
+        best_summary=best_summary,
+        avoid_summary=avoid_summary,
+    )
+    mdl = model or _model_for_tier(user_tier)
+    mt = _max_tokens_for_tier(user_tier)
+
+    data: dict | None = None
+    last_err: Exception | None = None
+    used_model = mdl
+    for _ in range(RETRY_ON_PARSE_FAIL + 1):
+        text, used_model = _complete(TIMING_SYSTEM_PROMPT, msg, mdl, mt)
+        try:
+            data = _parse_json_lenient(text)
+            break
+        except (json.JSONDecodeError, ValueError) as e:
+            last_err = e
+            continue
+    if data is None:
+        raise RuntimeError(
+            f"Claude 타이밍 JSON 파싱 실패({RETRY_ON_PARSE_FAIL + 1}회): {last_err}"
         )
 
     citations = tuple(

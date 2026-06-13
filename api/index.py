@@ -27,6 +27,7 @@ from src.api.v1 import (  # noqa: E402
     notifications,
     payment,
     saju,
+    timing,
 )
 
 app = FastAPI(title="자평(子平) API", version="0.0.1")
@@ -37,6 +38,7 @@ app.include_router(chat.router, prefix="/api")
 app.include_router(compatibility.router, prefix="/api")
 app.include_router(date_selection.router, prefix="/api")
 app.include_router(decision.router, prefix="/api")
+app.include_router(timing.router, prefix="/api")
 app.include_router(notifications.router, prefix="/api")
 # 회원·결제 — main.py 와 동일하게 /api/v1 prefix (라우터 자체 prefix 는 /auth, /payment)
 # DB import 는 서비스 함수 내부에서 lazy 하게 발생하므로 cold start 부담 없음.
