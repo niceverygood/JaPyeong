@@ -9,7 +9,7 @@ from src.ai import consultation, guardrails
 from src.ai.glossary import annotate_hanja
 from src.ai.tone_down import tone_down
 from src.api.v1.chat_schemas import ChatRequest, ChatResponse, CitationDTO
-from src.middleware.rate_limit import get_limiter
+from src.middleware.rate_limit import get_limiter, resolve_tier
 from src.services import saju_service
 
 router = APIRouter(prefix="/v1/chat", tags=["chat"])
@@ -26,9 +26,10 @@ def _post(text: str) -> str:
 
 @router.post("", response_model=ChatResponse)
 async def chat(req: ChatRequest, request: Request) -> ChatResponse:
-    # -1. Rate limit — 비회원 일일 5회 / IP 분당 60 / IP 일일 1000
-    # TODO Sprint 1-2: user_tier 를 JWT 에서 추출
-    await get_limiter().enforce(request, user_tier="anon")
+    # -1. Rate limit — 티어별 일일 한도(anon 5 / basic 20 / std 100 / prem·family 500)
+    # 티어는 요청 JWT 에서 해석 → 결제하면 즉시 한도 상향 + 심층 모델 적용.
+    tier = resolve_tier(request)
+    await get_limiter().enforce(request, user_tier=tier)
     # 0. 입력 위기 키워드 검사 — 즉시 상담 안내로 단축
     pre = guardrails.check_question(req.question)
     if not pre.safe:
@@ -50,7 +51,9 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
 
     # 2. LLM 자문
     try:
-        result = consultation.consult(natal=natal, question=req.question)
+        result = consultation.consult(
+            natal=natal, question=req.question, user_tier=tier
+        )
     except RuntimeError as e:
         # ANTHROPIC_API_KEY 미설정
         raise HTTPException(503, str(e)) from e

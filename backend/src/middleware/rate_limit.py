@@ -36,6 +36,35 @@ from typing import Protocol
 
 from fastapi import HTTPException, Request
 
+from src.security.jwt_auth import AuthError, decode_token, extract_bearer
+
+
+def _claims_from_request(request: Request):
+    """Authorization bearer JWT → TokenClaims | None.
+
+    토큰이 없거나 검증 실패면 None(게스트 취급). rate limit·tier 해석의 단일 출처.
+    """
+    token = extract_bearer(request.headers.get("authorization"))
+    if not token:
+        return None
+    try:
+        return decode_token(token)
+    except AuthError:
+        return None
+
+
+def resolve_tier(request: Request) -> str:
+    """요청의 JWT 에서 구독 티어를 추출. 비로그인/무효 토큰은 'anon'."""
+    claims = _claims_from_request(request)
+    return claims.tier if claims else "anon"
+
+
+def resolve_user_id(request: Request) -> int | None:
+    """요청의 JWT 에서 user_id 추출 (로그 자산화용). 없으면 None."""
+    claims = _claims_from_request(request)
+    return claims.user_id if claims else None
+
+
 # ── 티어별 일일 한도 ─────────────────────────────────────
 TIER_DAILY: dict[str, int] = {
     "anon": 5,        # 비회원 (Free)
@@ -150,16 +179,26 @@ class RateLimiter:
 
     @staticmethod
     def _get_user_id(request: Request) -> str | None:
-        # Sprint 1-2 이후: JWT 디코드해서 user_id 추출
-        # 지금은 X-User-Id 헤더 또는 None
-        return request.headers.get("x-user-id")
+        # JWT(Authorization bearer) 에서 user_id 추출 — 회원 일일 한도 카운터 식별자.
+        uid = resolve_user_id(request)
+        if uid is not None:
+            return str(uid)
+        # 레거시/DEV 폴백 — ALLOW_X_USER_ID 일 때만 헤더 허용
+        if os.environ.get("ALLOW_X_USER_ID", "false").lower() in ("1", "true", "yes"):
+            return request.headers.get("x-user-id")
+        return None
 
     async def check(
         self,
         request: Request,
-        user_tier: str = "anon",
+        user_tier: str | None = None,
     ) -> RateLimitViolation | None:
-        """위반 시 RateLimitViolation 반환, 통과 시 None."""
+        """위반 시 RateLimitViolation 반환, 통과 시 None.
+
+        user_tier 가 None 이면 요청 JWT 에서 자동 해석(resolve_tier).
+        """
+        if user_tier is None:
+            user_tier = resolve_tier(request)
         ip = self._get_ip(request)
         user_id = self._get_user_id(request)
         now = int(time.time())
@@ -196,8 +235,8 @@ class RateLimiter:
 
         return None
 
-    async def enforce(self, request: Request, user_tier: str = "anon") -> None:
-        """위반 시 HTTPException(429) raise."""
+    async def enforce(self, request: Request, user_tier: str | None = None) -> None:
+        """위반 시 HTTPException(429) raise. user_tier=None 이면 JWT 에서 자동 해석."""
         violation = await self.check(request, user_tier)
         if violation is None:
             return

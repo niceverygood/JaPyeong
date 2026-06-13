@@ -34,6 +34,22 @@ MAX_TOKENS = 2200  # v2: contested/cautions 다 채우면 길어지므로 여유
 TEMPERATURE = 0.5
 RETRY_ON_PARSE_FAIL = 1  # Claude가 가끔 JSON을 끊기게 생성 → 1회 자동 재시도
 
+# ── 티어별 모델 분기 (수익화: premium/family 는 심층 모델로 8배 가격 정당화) ──
+# basic/standard/anon → 표준(sonnet), premium/family → 심층(opus).
+# config.anthropic_model_deep 과 동일 기본값. OpenRouter 경유 시 _to_openrouter_slug 가 매핑.
+DEEP_MODEL = os.environ.get("ANTHROPIC_MODEL_DEEP", "claude-opus-4-7")
+DEEP_MAX_TOKENS = 3200  # 심층 티어는 더 길고 깊은 풀이 허용
+_DEEP_TIERS = frozenset({"premium", "family"})
+
+
+def _model_for_tier(user_tier: str | None) -> str:
+    """티어 → 자문 모델. premium/family 는 심층 모델, 그 외 표준."""
+    return DEEP_MODEL if user_tier in _DEEP_TIERS else DEFAULT_MODEL
+
+
+def _max_tokens_for_tier(user_tier: str | None) -> int:
+    return DEEP_MAX_TOKENS if user_tier in _DEEP_TIERS else MAX_TOKENS
+
 
 @dataclass(frozen=True, slots=True)
 class Citation:
@@ -76,7 +92,9 @@ def _to_openrouter_slug(model: str) -> str:
     return _OPENROUTER_SLUGS.get(model, "anthropic/claude-sonnet-4.6")
 
 
-def _complete(system: str, user_msg: str, model: str) -> tuple[str, str]:
+def _complete(
+    system: str, user_msg: str, model: str, max_tokens: int = MAX_TOKENS
+) -> tuple[str, str]:
     """단일 LLM 완성 호출 — (응답 텍스트, 실제 사용 모델명) 반환.
 
     공급자 선택:
@@ -92,7 +110,7 @@ def _complete(system: str, user_msg: str, model: str) -> tuple[str, str]:
         client = anthropic.Anthropic(api_key=anth_key)
         resp = client.messages.create(
             model=model,
-            max_tokens=MAX_TOKENS,
+            max_tokens=max_tokens,
             temperature=TEMPERATURE,
             system=system,
             messages=[{"role": "user", "content": user_msg}],
@@ -114,7 +132,7 @@ def _complete(system: str, user_msg: str, model: str) -> tuple[str, str]:
             },
             json={
                 "model": slug,
-                "max_tokens": MAX_TOKENS,
+                "max_tokens": max_tokens,
                 "temperature": TEMPERATURE,
                 "messages": [
                     {"role": "system", "content": system},
@@ -134,20 +152,27 @@ def _complete(system: str, user_msg: str, model: str) -> tuple[str, str]:
     )
 
 
-def consult(natal: dict, question: str, model: str | None = None) -> ConsultationResult:
+def consult(
+    natal: dict,
+    question: str,
+    model: str | None = None,
+    user_tier: str | None = None,
+) -> ConsultationResult:
     """룰베이스 사주 JSON + 질문 → Claude 자문(JSON) 호출.
 
+    user_tier 가 premium/family 면 심층 모델(opus)·더 긴 응답으로 자문한다.
     Claude가 가끔 max_tokens 한계로 JSON을 끊기게 생성 → 파싱 실패 시 1회 재시도.
     """
     natal_json = json.dumps(natal, ensure_ascii=False, default=str)
     msg = build_user_message(natal_json, question)
-    mdl = model or DEFAULT_MODEL
+    mdl = model or _model_for_tier(user_tier)
+    mt = _max_tokens_for_tier(user_tier)
 
     data: dict | None = None
     last_err: Exception | None = None
     used_model = mdl
     for _ in range(RETRY_ON_PARSE_FAIL + 1):
-        text, used_model = _complete(SYSTEM_PROMPT, msg, mdl)
+        text, used_model = _complete(SYSTEM_PROMPT, msg, mdl, mt)
         try:
             data = _parse_json_lenient(text)
             break
@@ -222,6 +247,7 @@ def consult_decision(
     option_b_desc: str,
     context: str | None = None,
     model: str | None = None,
+    user_tier: str | None = None,
 ) -> DecisionResult:
     """사주 + 두 선택지 → Claude 결정 도우미 자문."""
     natal_json = json.dumps(natal, ensure_ascii=False, default=str)
@@ -233,13 +259,14 @@ def consult_decision(
         option_b_desc=option_b_desc,
         context=context,
     )
-    mdl = model or DEFAULT_MODEL
+    mdl = model or _model_for_tier(user_tier)
+    mt = _max_tokens_for_tier(user_tier)
 
     data: dict | None = None
     last_err: Exception | None = None
     used_model = mdl
     for _ in range(RETRY_ON_PARSE_FAIL + 1):
-        text, used_model = _complete(DECISION_SYSTEM_PROMPT, msg, mdl)
+        text, used_model = _complete(DECISION_SYSTEM_PROMPT, msg, mdl, mt)
         try:
             data = _parse_json_lenient(text)
             break
@@ -299,6 +326,7 @@ def consult_compatibility(
     label_b: str | None = None,
     question: str | None = None,
     model: str | None = None,
+    user_tier: str | None = None,
 ) -> ConsultationResult:
     """두 사주 + 결정론적 분석 → Claude 궁합 자문 호출.
 
@@ -316,13 +344,14 @@ def consult_compatibility(
         label_b=label_b,
         question=question,
     )
-    mdl = model or DEFAULT_MODEL
+    mdl = model or _model_for_tier(user_tier)
+    mt = _max_tokens_for_tier(user_tier)
 
     data: dict | None = None
     last_err: Exception | None = None
     used_model = mdl
     for _ in range(RETRY_ON_PARSE_FAIL + 1):
-        text, used_model = _complete(COMPAT_SYSTEM_PROMPT, msg, mdl)
+        text, used_model = _complete(COMPAT_SYSTEM_PROMPT, msg, mdl, mt)
         try:
             data = _parse_json_lenient(text)
             break

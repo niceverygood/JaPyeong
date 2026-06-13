@@ -244,11 +244,33 @@ async def get_active_user(user_id: int) -> dict[str, Any] | None:
             "user_id": user.id,
             "email": user.email,
             "name": user.name,
-            "tier": _user_tier(user),
+            "tier": await _resolve_active_tier(session, user.id),
         }
 
 
-def _user_tier(user) -> str:  # noqa: ANN001
-    """User 객체 → 현재 활성 구독 티어. Subscription 조회는 별도 service에서."""
-    # MVP: 모두 anon. Subscription 활성 조회는 추후 별도 함수로.
-    return "anon"
+# 티어 등급 — 동시에 여러 활성 구독이 있으면 최고 등급을 채택.
+_TIER_RANK: dict[str, int] = {"basic": 1, "standard": 2, "premium": 3, "family": 4}
+
+
+async def _resolve_active_tier(session, user_id: int) -> str:  # noqa: ANN001
+    """활성 구독(status=ACTIVE 이고 기간 만료 전) 중 최고 티어를 반환. 없으면 'anon'.
+
+    이 값이 JWT 의 tier 클레임으로 발급되어 rate_limit·모델 분기의 단일 출처가 된다.
+    구독 결제·해지 직후에는 클라이언트가 /auth/refresh 로 토큰을 갱신해야 즉시 반영된다.
+    """
+    from sqlalchemy import select
+
+    from src.models.db_models import Subscription, SubscriptionStatus
+
+    now = datetime.now(UTC)
+    plans = (
+        await session.execute(
+            select(Subscription.plan).where(
+                Subscription.user_id == user_id,
+                Subscription.status == SubscriptionStatus.ACTIVE,
+                Subscription.current_period_end > now,
+            )
+        )
+    ).scalars().all()
+    best = max(plans, key=lambda p: _TIER_RANK.get(p, 0), default=None)
+    return best if best in _TIER_RANK else "anon"

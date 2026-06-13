@@ -9,7 +9,7 @@ from src.ai.glossary import annotate_hanja
 from src.ai.tone_down import tone_down
 from src.api.v1.chat_schemas import CitationDTO
 from src.api.v1.decision_schemas import DecisionRequest, DecisionResponse
-from src.middleware.rate_limit import get_limiter
+from src.middleware.rate_limit import get_limiter, resolve_tier, resolve_user_id
 from src.services import decision_log_service, saju_service
 
 router = APIRouter(prefix="/v1/decision", tags=["decision"])
@@ -22,7 +22,8 @@ def _post(text: str) -> str:
 
 @router.post("", response_model=DecisionResponse)
 async def decision(req: DecisionRequest, request: Request) -> DecisionResponse:
-    await get_limiter().enforce(request, user_tier="anon")
+    tier = resolve_tier(request)
+    await get_limiter().enforce(request, user_tier=tier)
     # 0. 위기 키워드 (context + 두 옵션 description 검사)
     blob = " ".join(
         s
@@ -67,6 +68,7 @@ async def decision(req: DecisionRequest, request: Request) -> DecisionResponse:
             option_b_title=req.option_b.title,
             option_b_desc=req.option_b.description,
             context=req.context,
+            user_tier=tier,
         )
     except RuntimeError as e:
         raise HTTPException(503, str(e)) from e
@@ -77,10 +79,10 @@ async def decision(req: DecisionRequest, request: Request) -> DecisionResponse:
     post = guardrails.filter_answer(result.answer)
 
     # 3-1. 결정 로그 자산화 (DATABASE_URL 설정 시만 작동, 진짜 해자 ❶)
-    # TODO Sprint 1-2: request 헤더에서 user_id 추출 + birth_record_id 매핑
+    # JWT 가 있으면 회원 결정으로 적립 → 사후 만족도 추적·프롬프트 보강의 복리 데이터.
     try:
         await decision_log_service.save_decision_log(
-            user_id=None,             # Sprint 1-2 회원 도입 후 jwt 디코드
+            user_id=resolve_user_id(request),  # 비로그인은 None (기존 동작 유지)
             birth_record_id=None,
             decision_type="general",  # Sprint 11-12 자동 분류기
             natal=natal,
