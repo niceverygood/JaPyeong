@@ -18,5 +18,6 @@ export type RootStackParamList = {
   Compatibility: undefined;
   DateSelection: undefined;
   Decision: undefined;
+  Timing: undefined;
   Notifications: undefined;
 };

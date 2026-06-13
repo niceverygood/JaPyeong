@@ -131,6 +131,22 @@ export function LandingScreen() {
           <View className="mt-10">
             <Button label="명식 입력하기" onPress={() => navigation.navigate("Onboarding")} />
 
+            {/* 시그니처 — 결정 타이밍 코치 (강조) */}
+            <Pressable
+              onPress={() => navigation.navigate("Timing")}
+              className="mt-3 flex-row items-center gap-3 rounded-lg border px-4 py-3.5 active:opacity-80"
+              style={{ borderColor: colors.gold.primary, backgroundColor: "rgba(201,169,97,0.10)" }}
+            >
+              <Text className="font-serif text-2xl text-gold">決</Text>
+              <View className="flex-1">
+                <Text className="font-serif text-base text-ink">결정 타이밍 코치</Text>
+                <Text className="font-sans text-xs text-ink-secondary">
+                  이 결정, 언제 할까 — 길흉 캘린더로 길일·피할 날
+                </Text>
+              </View>
+              <Text className="font-sans text-lg text-gold">→</Text>
+            </Pressable>
+
             {/* 부가 진입 — 3종 */}
             <View className="mt-3 gap-2">
               <Pressable

@@ -11,6 +11,7 @@ import { DecisionScreen } from "@/screens/Decision/DecisionScreen";
 import { LandingScreen } from "@/screens/Landing/LandingScreen";
 import { NotificationsScreen } from "@/screens/Notifications/NotificationsScreen";
 import { OnboardingScreen } from "@/screens/Onboarding/OnboardingScreen";
+import { TimingScreen } from "@/screens/Timing/TimingScreen";
 import { CheckoutScreen } from "@/screens/Payment/CheckoutScreen";
 import { PaymentResultScreen } from "@/screens/Payment/PaymentResultScreen";
 import { PlansScreen } from "@/screens/Payment/PlansScreen";
@@ -88,6 +89,11 @@ export function RootNavigator() {
         name="Decision"
         component={DecisionScreen}
         options={{ title: "결정 도우미" }}
+      />
+      <Stack.Screen
+        name="Timing"
+        component={TimingScreen}
+        options={{ title: "결정 타이밍" }}
       />
       <Stack.Screen
         name="Notifications"
