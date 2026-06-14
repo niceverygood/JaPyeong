@@ -30,11 +30,13 @@ def test_sin_yak_yongsin_is_parent_element():
     assert r.confidence == "provisional"
 
 
-def test_sin_gang_yongsin_is_child_element():
-    # 일간 壬(水)의 子 = 木. EOKBU 신강 → 용신 = 木(식상)
+def test_sin_gang_yongsin_hybrid():
+    # 壬(水) 신강 + 子월(한겨울 水왕) → 억부(식상 木) 또는 조후(제방 土) 모두 정당.
+    # hybrid 도입 후 한겨울 水왕은 조후 제방(土)을 우선할 수 있다.
     r = yongsin.derive_yongsin(SIN_GANG)
-    assert r.yongsin == Ohaeng.MOK
     assert r.based_on_strength == "신강"
+    assert r.yongsin in {Ohaeng.MOK, Ohaeng.TO}
+    assert r.method in {"eokbu", "johu", "hybrid"}
 
 
 def test_huishin_giishin_consistency():

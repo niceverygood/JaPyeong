@@ -35,7 +35,7 @@ def test_pure_ally_is_sin_gang():
     assert r.label == "신강"
     assert r.ally_ratio > 0.9
     assert r.deuk_ryeong is True  # 월지 子(水) — 같은 오행
-    assert r.confidence == "provisional"
+    assert r.confidence == "high"  # ratio>0.9 → 경계서 멀어 명백(신뢰도 high)
 
 
 def test_pure_hostile_is_sin_yak():

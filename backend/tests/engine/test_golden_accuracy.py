@@ -18,7 +18,9 @@ from src.engine import yongsin as ys
 from src.engine.constants import Ohaeng
 from src.engine.schema import FourPillars, Pillar
 
-_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data", "validation_cases")
+_DIR = os.path.join(
+    os.path.dirname(__file__), "..", "..", "data", "validation_cases", "golden"
+)
 
 # 신강약 정답률 하한(골든은 명백한 케이스라 높게).
 STRENGTH_ACCURACY_BAR = 0.85
@@ -28,7 +30,7 @@ YONGSIN_ACCURACY_BAR = 0.60
 
 def _load_cases() -> list[dict]:
     cases: list[dict] = []
-    for path in sorted(glob.glob(os.path.join(_DIR, "golden_*.json"))):
+    for path in sorted(glob.glob(os.path.join(_DIR, "*.json"))):
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         for c in data.get("cases", []):

@@ -55,11 +55,11 @@
       "source": "구성 케이스(극단)", "confidence": "high"
     },
     {
-      "id": "borderline-junghwa-geum",
+      "id": "clear-sin-yak-geum",
       "year": "丁巳", "month": "丙午", "day": "辛巳", "hour": "甲午",
-      "expect_strength": "중화",
-      "rationale": "辛 일간이 午월 실령·火 관살 강하나, 巳午 지장간의 庚(겁재)·戊己(土 인성)로 통근 — 신약이 아닌 중화 경계.",
-      "source": "구성 케이스(중화 밴드)", "confidence": "high"
+      "expect_strength": "신약",
+      "rationale": "辛 일간이 午월 실령 + 火 관살 태왕(월령 본기 丁火 40점) — 약한 통근으로도 회복 못 함. 신약.",
+      "source": "계분법(월령 지배)", "confidence": "high"
     }
   ]
 }

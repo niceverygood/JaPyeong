@@ -1,0 +1,24 @@
+{
+  "_meta": {
+    "purpose": "고전·명가 골든셋 — 적천수/자평진전/궁통보감/통근론 통설. 리서치 합성 산출.",
+    "label_field": "expect_strength",
+    "note": "강약(expect_strength)은 결정론 검증 대상. 용신(expect_yongsin)은 억부/조후가 명확한 케이스에만 라벨 — 전왕·종격·극신약의 용신은 유파 차가 커 결정론으로 단정하지 않고 LLM·자문위원이 종합한다."
+  },
+  "cases": [
+    {"id": "gc_001_geollok_gap_in", "year": "甲寅", "month": "丙寅", "day": "甲寅", "hour": "乙亥", "expect_strength": "신강", "expect_yongsin": "火", "source": "자평진전 건록격·통근론", "confidence": "high"},
+    {"id": "gc_002_gokjik", "year": "甲寅", "month": "丁卯", "day": "甲寅", "hour": "乙亥", "expect_strength": "신강", "source": "적천수 곡직(일행득기). 용신은 순세(木火) 유파차.", "confidence": "high"},
+    {"id": "gc_003_yeomsang", "year": "丙午", "month": "甲午", "day": "丙午", "hour": "甲午", "expect_strength": "신강", "source": "적천수 염상격. 용신 순세(火土) 유파차.", "confidence": "high"},
+    {"id": "gc_004_yunha", "year": "壬子", "month": "壬子", "day": "壬子", "hour": "壬子", "expect_strength": "신강", "source": "윤하격 전수 극단(기존 test PURE_WATER).", "confidence": "high"},
+    {"id": "gc_005_jeonggeum", "year": "辛酉", "month": "丁酉", "day": "辛酉", "hour": "戊戌", "expect_strength": "신강", "source": "통근론 록왕지 중첩. 용신 종혁/식상 유파차.", "confidence": "high"},
+    {"id": "gc_006_in_mok", "year": "壬子", "month": "辛亥", "day": "乙卯", "hour": "丁亥", "expect_strength": "신강", "expect_yongsin": "火", "source": "亥월 水生木 인성국 + 卯 건록(신강→식상 火)", "confidence": "high"},
+    {"id": "gc_007_yangin", "year": "丙午", "month": "甲午", "day": "丙午", "hour": "丁巳", "expect_strength": "신강", "source": "자평진전 양인격", "confidence": "high"},
+    {"id": "gc_008_johu_winter_gap", "year": "庚子", "month": "戊子", "day": "甲子", "hour": "丙寅", "expect_strength": "신강", "expect_yongsin": "火", "source": "궁통보감 겨울 甲 用丙(寒木向陽) — 조후", "confidence": "high"},
+    {"id": "gc_009_sinyak_im", "year": "丙午", "month": "丙午", "day": "壬戌", "hour": "戊辰", "expect_strength": "신약", "expect_yongsin": "金", "source": "억부 통설(신약→인성 金)", "confidence": "high"},
+    {"id": "gc_010_geuksinyak_byeong", "year": "壬子", "month": "庚子", "day": "丙申", "hour": "戊子", "expect_strength": "신약", "source": "극신약 丙. 용신(조후火 vs 인성木) 유파차.", "confidence": "high"},
+    {"id": "gc_011_sangwan_sinyak", "year": "甲午", "month": "己巳", "day": "甲午", "hour": "丁卯", "expect_strength": "신약", "expect_yongsin": "水", "source": "자평진전 상관격 신약(신약→인성 水)", "confidence": "high"},
+    {"id": "gc_012_to_sinyak_in", "year": "甲寅", "month": "甲寅", "day": "戊子", "hour": "乙卯", "expect_strength": "신약", "expect_yongsin": "火", "source": "춘토수 관살태왕(신약→인성 火)", "confidence": "high"},
+    {"id": "gc_013_johu_summer_geum", "year": "丙午", "month": "甲午", "day": "庚午", "hour": "壬午", "expect_strength": "신약", "source": "여름 庚 극신약. 용신(조후水 vs 인성土) 유파차.", "confidence": "high"},
+    {"id": "gc_014_jongsal", "year": "乙酉", "month": "乙酉", "day": "乙酉", "hour": "庚辰", "expect_strength": "신약", "source": "적천수 종살격(종격 용신 유파차)", "confidence": "medium"},
+    {"id": "gc_015_jongjae", "year": "戊申", "month": "辛酉", "day": "甲申", "hour": "戊辰", "expect_strength": "신약", "source": "적천수 종재격(종격 용신 유파차)", "confidence": "medium"}
+  ]
+}
