@@ -40,3 +40,21 @@ export function useChat() {
     mutationFn: sendChat,
   });
 }
+
+// ── 무료 맛보기(teaser) — 결정론 '내 한 줄' (전환 퍼널) ──────────
+export interface TeaserResponse {
+  hook: string;
+  flow: string;
+  covers: string[];
+  note: string;
+  unlock: { coin_item: string; coin_cost: number; subscribe: boolean };
+}
+
+export interface TeaserRequest {
+  birth: BirthInput;
+  question?: string;
+}
+
+export function fetchTeaser(req: TeaserRequest): Promise<TeaserResponse> {
+  return post<TeaserResponse>("/v1/chat/teaser", req);
+}

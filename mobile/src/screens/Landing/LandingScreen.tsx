@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/primitives/Button";
 import { Card } from "@/components/primitives/Card";
+import { TeaserCard } from "@/components/domain/TeaserCard";
 import type { RootStackParamList } from "@/navigation/types";
 import { colors } from "@/theme";
 
@@ -84,6 +85,11 @@ export function LandingScreen() {
               기준으로 비교하고 결정의 시점을 검토하는 도구입니다. 운세 예측이 아니라,
               당신이 스스로 결정하도록 돕습니다.
             </Text>
+          </View>
+
+          {/* 무료 리딩 — 전환 퍼널 (돌아오면 내 한 줄 즉시) */}
+          <View className="mb-4">
+            <TeaserCard />
           </View>
 
           {/* 미리보기 — 결정 캘린더(도구) */}
