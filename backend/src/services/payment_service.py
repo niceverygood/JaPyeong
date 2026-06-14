@@ -744,6 +744,33 @@ async def verify_iap_purchase(
         }
 
 
+async def verify_consumable(
+    platform: str,
+    product_id: str,
+    receipt: str,
+    transaction_id: str | None = None,
+    package_name: str | None = None,
+) -> dict[str, Any]:
+    """소비성 인앱결제(코인 충전팩) 영수증 검증 — 구독 생성 없이 유효성만 확인.
+
+    호출측(coins 라우터)이 검증 통과 후 coin_service.charge 로 코인을 적립한다.
+    중복 적립 방지는 transaction_id 를 멱등 키로 사용해 호출측에서 처리.
+    """
+    if platform == "ios":
+        await _verify_apple_receipt(receipt, product_id)
+    elif platform == "android":
+        await _verify_google_purchase(
+            receipt, product_id, package_name or "com.japyeong.app",
+        )
+    else:
+        raise PaymentError(f"지원하지 않는 platform: {platform}")
+    return {
+        "platform": platform,
+        "product_id": product_id,
+        "transaction_id": transaction_id or product_id,
+    }
+
+
 async def refund_payment(
     payment_id: int,
     reason: str,

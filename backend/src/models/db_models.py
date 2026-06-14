@@ -567,3 +567,64 @@ class RateLimitEvent(Base):
     blocked_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_now, index=True,
     )
+
+
+# ── 코인 경제 (선충전 지갑 + 단건 사다리) — ARPU 엔진 ──────────────
+class CoinTxnKind(StrEnum):
+    """코인 원장 거래 종류."""
+
+    CHARGE = "charge"    # 충전(결제로 적립)
+    BONUS = "bonus"      # 충전 보너스 적립
+    SPEND = "spend"      # 단건 상품 사용 차감
+    REFUND = "refund"    # 차감 환원(콘텐츠 생성 실패 등)
+    EXPIRE = "expire"    # 만료 소멸
+    ADJUST = "adjust"    # 운영 수기 조정
+
+
+class CoinWallet(Base):
+    """사용자별 코인 지갑 — 잔액의 단일 출처(원장 합과 일치 유지)."""
+
+    __tablename__ = "coin_wallet"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id", ondelete="CASCADE"), unique=True, index=True,
+    )
+    balance: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    lifetime_charged: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    lifetime_spent: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_now, onupdate=_now,
+    )
+
+    transactions: Mapped[list[CoinTransaction]] = relationship(back_populates="wallet")
+
+
+class CoinTransaction(Base):
+    """코인 원장 — 모든 적립/차감 1건 1행 (감사·정합성)."""
+
+    __tablename__ = "coin_transaction"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    wallet_id: Mapped[int] = mapped_column(
+        ForeignKey("coin_wallet.id", ondelete="CASCADE"), index=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id", ondelete="CASCADE"), index=True,
+    )
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)  # CoinTxnKind
+    amount: Mapped[int] = mapped_column(Integer, nullable=False)   # +적립 / -차감
+    balance_after: Mapped[int] = mapped_column(Integer, nullable=False)
+    item_code: Mapped[str | None] = mapped_column(String(40))       # spend 상품 코드
+    payment_id: Mapped[int | None] = mapped_column(
+        ForeignKey("payment.id", ondelete="SET NULL"),
+    )
+    # 멱등 키 — IAP transaction_id / 클라이언트 요청 키 중복 차단 (NULL 다중 허용)
+    idempotency_key: Mapped[str | None] = mapped_column(String(160), unique=True)
+    memo: Mapped[str | None] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_now, index=True,
+    )
+
+    wallet: Mapped[CoinWallet] = relationship(back_populates="transactions")
