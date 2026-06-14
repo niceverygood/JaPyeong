@@ -256,8 +256,8 @@ export function TimingScreen() {
                 </Card>
               ) : null}
 
-              {/* 캘린더 히트맵 */}
-              <View>
+              {/* 캘린더 히트맵 (넓은 화면에서 셀 과대 방지 — 모바일 폭 기준 유지) */}
+              <View style={{ width: "100%", maxWidth: 460, alignSelf: "center" }}>
                 <Text className="mb-2 font-sans text-sm text-ink-secondary">길흉 캘린더</Text>
                 {months.map((mo) => (
                   <View key={mo.key} className="mb-4">
