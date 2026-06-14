@@ -81,7 +81,7 @@ export interface Strength {
   deuk_ryeong: boolean;
   deuk_ji: boolean;
   notes: string[];
-  confidence: string; // "provisional"
+  confidence: "high" | "medium" | "low" | string; // 판정 경계로부터 거리 기반
 }
 
 export interface Geokguk {

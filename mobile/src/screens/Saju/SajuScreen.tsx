@@ -39,6 +39,25 @@ function SectionTitle({ children, note }: { children: string; note?: string }) {
   );
 }
 
+// 신강신약 판정의 '확신도' — 판정 경계로부터 거리 기반(엔진 confidence).
+// 정직한 불확실성 표면화: 경계 명조는 '해석 주의'로 솔직히 표기한다.
+const CONFIDENCE_CHIP: Record<string, { label: string; text: string; border: string }> = {
+  high: { label: "신뢰도 높음", text: "text-gold-light", border: "border-gold-muted" },
+  medium: { label: "신뢰도 보통", text: "text-accent-clay", border: "border-accent-brown" },
+  low: { label: "경계 · 해석 주의", text: "text-accent-terracotta", border: "border-accent-terracotta" },
+};
+
+const CONFIDENCE_FALLBACK = { label: "신뢰도 보통", text: "text-accent-clay", border: "border-accent-brown" };
+
+function ConfidenceChip({ confidence }: { confidence?: string }) {
+  const c = CONFIDENCE_CHIP[confidence ?? ""] ?? CONFIDENCE_FALLBACK;
+  return (
+    <View className={`rounded-md border ${c.border} bg-bg-card px-2 py-0.5`}>
+      <Text className={`font-sans text-[10px] ${c.text}`}>{c.label}</Text>
+    </View>
+  );
+}
+
 export function SajuScreen() {
   const birth = useBirthStore((s) => s.birth);
   const navigation = useNavigation<Nav>();
@@ -211,13 +230,13 @@ export function SajuScreen() {
                 <View className="mb-3 flex-row items-center justify-between">
                   <Text className="font-serif text-lg text-gold-light">강약·격국·용신</Text>
                   <View className="rounded-md border border-accent-brown bg-bg-card px-2 py-0.5">
-                    <Text className="font-sans text-[10px] text-accent-clay">
-                      잠정 · 자문위원 검증 전
+                    <Text className="font-sans text-[10px] text-ink-secondary">
+                      전통명리 결정론 엔진
                     </Text>
                   </View>
                 </View>
                 <View className="gap-3">
-                  <View className="flex-row items-baseline gap-3">
+                  <View className="flex-row items-center gap-3">
                     <Text className="w-16 font-sans text-sm text-ink-muted">신강신약</Text>
                     <Text className="font-serif text-lg text-ink">{data.strength.label}</Text>
                     <Text className="font-sans text-xs text-ink-muted">
@@ -225,6 +244,7 @@ export function SajuScreen() {
                       {data.strength.deuk_ryeong ? " · 득령" : ""}
                       {data.strength.deuk_ji ? " · 득지" : ""})
                     </Text>
+                    <ConfidenceChip confidence={data.strength.confidence} />
                   </View>
                   <View className="flex-row items-baseline gap-3">
                     <Text className="w-16 font-sans text-sm text-ink-muted">격국</Text>
@@ -243,8 +263,9 @@ export function SajuScreen() {
                   </View>
                 </View>
                 <Text className="mt-3 font-sans text-[11px] leading-5 text-ink-muted">
-                  본 결과는 통설 기반 자동 산출(잠정)입니다. 정통성 확정은 명리 자문위원
-                  검증 케이스 수집 후 갱신됩니다.
+                  신강신약은 학술파 계분법(월령 본기 가중)으로 산출하며, 고전 통설
+                  검증셋과 일치하도록 보정되었습니다. 격국·용신은 통설 기반 방향 제시이며,
+                  극단격(전왕·종격)은 AI 자문으로 보완됩니다.
                 </Text>
               </Card>
 
