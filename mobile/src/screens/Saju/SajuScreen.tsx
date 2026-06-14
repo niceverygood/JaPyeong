@@ -62,6 +62,23 @@ export function SajuScreen() {
     <SafeAreaView className="flex-1 bg-bg-base" edges={["bottom"]}>
       <ScrollView>
         <View className="gap-4 p-5">
+          {/* 재맥락화 — '운세 리포트'가 아니라 도구의 근거 데이터(엔진 출력) */}
+          <View
+            className="rounded-lg border bg-bg-elevated p-3"
+            style={{ borderColor: colors.gold.muted }}
+          >
+            <View className="mb-1 flex-row items-center justify-between">
+              <Text className="font-sans text-xs text-gold">근거 데이터</Text>
+              <View className="rounded border border-line bg-bg-card px-1.5 py-0.5">
+                <Text className="font-sans text-[10px] text-ink-secondary">결정론 엔진 · RULED</Text>
+              </View>
+            </View>
+            <Text className="font-sans text-xs leading-5 text-ink-secondary">
+              이 화면은 결정 타이밍·A/B 비교가 사용하는 근거 데이터입니다. 절기·진태양시·
+              60갑자를 결정론 엔진이 AI 밖에서 확정합니다 — 같은 생년월일은 항상 같은 결과.
+            </Text>
+          </View>
+
           {isLoading && (
             <View className="items-center py-16">
               <ActivityIndicator color={colors.gold.primary} />
