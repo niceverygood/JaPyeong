@@ -4,16 +4,48 @@ Phase 4 핵심: 3층 책임 분리.
 """
 
 from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel, Field
 
 from src.ai import consultation, guardrails
 from src.ai.glossary import annotate_hanja
 from src.ai.tone_down import tone_down
 from src.api.v1.chat_schemas import ChatRequest, ChatResponse, CitationDTO
+from src.engine.schema import BirthInfo
 from src.middleware.rate_limit import get_limiter, resolve_user_id
-from src.services import saju_service
+from src.services import saju_service, teaser_service
+from src.services.coin_catalog import get_spend_item
 from src.services.user_service import get_user_tier
 
 router = APIRouter(prefix="/v1/chat", tags=["chat"])
+
+
+class TeaserRequest(BaseModel):
+    birth: BirthInfo
+    question: str | None = Field(default=None, max_length=2000)
+
+
+@router.post("/teaser")
+async def teaser(req: TeaserRequest, request: Request) -> dict:
+    """무료 맛보기 — 결정론 명식에서 즉시 생성한 '내 한 줄' + 전체 풀이 잠금 안내.
+
+    LLM 미사용(무료·즉시). 전환 퍼널의 1단계: 신뢰를 주고 전체 풀이를 결제로 잇는다.
+    """
+    await get_limiter().enforce_ip_only(request)
+    try:
+        natal = saju_service.analyze_natal(req.birth).model_dump()
+    except NotImplementedError as e:
+        raise HTTPException(422, str(e)) from e
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+
+    result = teaser_service.build_teaser(natal, req.question, req.birth.year)
+    item = get_spend_item("consult_one")
+    result["unlock"] = {
+        "coin_item": "consult_one",
+        "coin_cost": item.cost if item else 4900,
+        "subscribe": True,
+    }
+    return result
 
 
 def _post(text: str) -> str:
