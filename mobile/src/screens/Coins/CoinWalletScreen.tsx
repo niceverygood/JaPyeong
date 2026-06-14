@@ -8,7 +8,7 @@
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
@@ -164,6 +164,22 @@ export function CoinWalletScreen() {
 
         <View className="mt-8">
           <Button label="요금제(구독) 보기" variant="ghost" onPress={() => navigation.navigate("Plans")} />
+        </View>
+
+        {/* 결제 안내 — App Store 3.1.2 (구독·환불 고지) */}
+        <View className="mt-6 border-t border-line pt-4">
+          <Text className="text-center font-sans text-[11px] leading-5 text-ink-muted">
+            코인 충전은 1회성 결제입니다. 구독은 자동 갱신(디폴트 OFF, 언제든 해지) ·
+            결제 후 7일 이내 100% 환불(전자상거래법 청약철회).
+          </Text>
+          <Pressable
+            onPress={() =>
+              Linking.openURL("https://ja-pyeong.vercel.app/refund.html").catch(() => {})
+            }
+            className="mt-2 items-center py-1.5 active:opacity-70"
+          >
+            <Text className="font-sans text-xs text-gold">환불·이용약관 보기</Text>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>

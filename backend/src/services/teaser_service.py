@@ -44,8 +44,8 @@ _LABEL_FLOW: dict[str, str] = {
     "대길": "기운이 크게 트이는",
     "길": "순조롭게 흐르는",
     "평": "차분히 다지는",
-    "주의": "한 박자 살피며 가는",
-    "흉": "무리를 피하고 내실을 다지는",
+    "주의": "한 박자 천천히 가는",
+    "흉": "차분히 내실을 다지는",
 }
 
 
@@ -98,23 +98,24 @@ def current_flow(natal: dict[str, Any], birth_year: int | None) -> str:
     return f"지금({age}세 무렵)은 {phrase} {gz} 대운 구간입니다."
 
 
+# 톤: 공포·단정 금지(자평 가드레일). '주목/활용/정돈'처럼 중립·실용 표현만.
 _CATEGORY_COVERS: dict[str, list[str]] = {
-    "love": ["인연이 들고 나는 시기", "관계에서 살릴 점과 조심할 점", "당신 사주에 맞는 만남의 결"],
+    "love": ["인연이 들고 나는 시기", "관계에서 참고할 주요 흐름", "나에게 맞는 만남의 결"],
     "career": ["이동·전환에 유리한 시기", "지금 자리에서 키울 강점", "분야와 방식의 결"],
-    "money": ["재물이 모이고 흩어지는 흐름", "확장과 수성의 시기", "당신에게 맞는 재물의 방식"],
-    "default": ["올해·내년의 핵심 시기", "조심할 시기와 살릴 시기", "당신 사주에 맞는 구체적 조언"],
+    "money": ["재물이 모이고 흩어지는 흐름", "확장할 시기와 정돈할 시기", "나에게 맞는 재물의 방식"],
+    "default": ["올해·내년의 주목할 시기", "활용할 시기와 정돈할 시기", "나에게 맞는 구체적 조언"],
 }
 
 
 def covers_for(question: str | None) -> list[str]:
-    """전체 풀이가 무엇을 짚어줄지 — 결제 동기. 질문 키워드로 카테고리 추정."""
+    """전체 풀이가 무엇을 짚어줄지 — 결제 동기. 질문 키워드로 카테고리 추정(한·영)."""
     q = (question or "").lower()
     cat = "default"
-    if any(w in q for w in ["연애", "결혼", "사랑", "이성", "인연", "배우자"]):
+    if any(w in q for w in ["연애", "결혼", "사랑", "이성", "인연", "배우자", "love", "marriage", "dating"]):
         cat = "love"
-    elif any(w in q for w in ["직업", "이직", "취업", "사업", "창업", "커리어", "진로"]):
+    elif any(w in q for w in ["직업", "이직", "취업", "사업", "창업", "커리어", "진로", "career", "job", "business"]):
         cat = "career"
-    elif any(w in q for w in ["돈", "재물", "투자", "재정", "money"]):
+    elif any(w in q for w in ["돈", "재물", "투자", "재정", "money", "invest", "finance"]):
         cat = "money"
     covers = list(_CATEGORY_COVERS[cat])
     covers.append("연해자평·삼명통회 등 고전 근거")

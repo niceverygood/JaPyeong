@@ -40,10 +40,13 @@ async def teaser(req: TeaserRequest, request: Request) -> dict:
 
     result = teaser_service.build_teaser(natal, req.question, req.birth.year)
     item = get_spend_item("consult_one")
+    # 결제 경로를 명확히: (1) 무료 일일 한도 내 AI 자문, (2) 코인 1회 심층, (3) 구독 무제한
     result["unlock"] = {
+        "free": "무료 일일 한도 내 AI 자문",
         "coin_item": "consult_one",
         "coin_cost": item.cost if item else 4900,
-        "subscribe": True,
+        "coin_label": "심층 정밀 풀이 1회",
+        "subscription_label": "구독 시 심층 무제한",
     }
     return result
 

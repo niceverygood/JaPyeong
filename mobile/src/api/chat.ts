@@ -47,7 +47,13 @@ export interface TeaserResponse {
   flow: string;
   covers: string[];
   note: string;
-  unlock: { coin_item: string; coin_cost: number; subscribe: boolean };
+  unlock: {
+    free: string;
+    coin_item: string;
+    coin_cost: number;
+    coin_label: string;
+    subscription_label: string;
+  };
 }
 
 export interface TeaserRequest {

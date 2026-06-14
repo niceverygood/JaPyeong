@@ -58,9 +58,12 @@ export function TeaserCard() {
           <ActivityIndicator color={colors.gold.primary} />
         </View>
       ) : q.isError ? (
-        <Text className="font-sans text-sm text-ink-secondary">
-          잠시 후 다시 시도해 주세요.
-        </Text>
+        <Pressable
+          onPress={() => q.refetch()}
+          className="items-center rounded-lg border border-line py-3 active:opacity-80"
+        >
+          <Text className="font-sans text-sm text-ink-secondary">다시 시도 →</Text>
+        </Pressable>
       ) : q.data ? (
         <>
           <HanjaText className="font-serif text-base leading-7 text-ink">
@@ -72,32 +75,39 @@ export function TeaserCard() {
             </HanjaText>
           )}
 
-          {/* 잠긴 전체 풀이 — 궁금증 → 결제 */}
+          {/* 더 깊이 볼 수 있는 것 (안내 — 가짜 잠금 아님) */}
           <View className="mt-3 rounded-lg border border-line bg-bg-card p-3">
             <Text className="mb-1 font-sans text-xs text-ink-muted">
-              🔒 전체 풀이에서 짚어 드려요
+              이런 걸 더 깊이 볼 수 있어요
             </Text>
             {q.data.covers.slice(0, 3).map((c, i) => (
-              <Text key={i} className="font-sans text-sm leading-6 text-ink-secondary">
-                · {c}
-              </Text>
+              <HanjaText key={i} className="font-sans text-sm leading-6 text-ink-secondary">
+                {`· ${c}`}
+              </HanjaText>
             ))}
           </View>
 
+          {/* 결제 경로 정직하게: 무료(한도) AI 자문 + 코인 1회 심층 */}
           <View className="mt-3 gap-2">
             <Pressable
               onPress={() => navigation.navigate("Chat")}
               className="items-center rounded-lg border py-3 active:opacity-80"
               style={{ borderColor: colors.gold.primary, backgroundColor: "rgba(201,169,97,0.14)" }}
             >
-              <Text className="font-serif text-sm text-gold">전체 풀이 보기</Text>
+              <Text className="font-serif text-sm text-gold">AI에게 물어보기</Text>
+              <Text className="mt-0.5 font-sans text-[11px] text-ink-muted">
+                무료 하루 한도 내 이용
+              </Text>
             </Pressable>
             <Pressable
               onPress={() => navigation.navigate("Coins")}
-              className="items-center py-1.5 active:opacity-70"
+              className="items-center rounded-lg border border-line py-2.5 active:opacity-80"
             >
-              <Text className="font-sans text-xs text-ink-muted">
-                심층 풀이 잠금 해제 · 코인 {q.data.unlock.coin_cost.toLocaleString("ko-KR")}~
+              <Text className="font-sans text-sm text-ink-secondary">
+                심층 정밀 풀이 · 코인 {q.data.unlock.coin_cost.toLocaleString("ko-KR")} (1회)
+              </Text>
+              <Text className="mt-0.5 font-sans text-[11px] text-ink-muted">
+                구독 시 심층 무제한
               </Text>
             </Pressable>
           </View>
