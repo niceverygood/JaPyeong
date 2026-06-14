@@ -21,9 +21,13 @@ import {
   endConnection,
   finishTransaction,
   getAvailablePurchases,
+  getProducts,
   getSubscriptions,
   initConnection,
+  requestPurchase,
   requestSubscription,
+  type Product,
+  type ProductPurchase,
   type Subscription,
   type SubscriptionPurchase,
 } from "react-native-iap";
@@ -117,4 +121,43 @@ export async function completeTransaction(
   purchase: SubscriptionPurchase,
 ): Promise<void> {
   await finishTransaction({ purchase, isConsumable: false });
+}
+
+
+// ── 코인 충전팩 (소비성 consumable) ──────────────────────────
+// 스토어 product_id = 백엔드 coin_catalog 코드. App Store/Play 에 '소비성' 상품으로 등록.
+export const COIN_PACK_SKUS = [
+  "coin_10000",
+  "coin_30000",
+  "coin_50000",
+  "coin_100000",
+] as const;
+
+export type CoinPackCode = (typeof COIN_PACK_SKUS)[number];
+
+export function isCoinPack(sku: string): sku is CoinPackCode {
+  return (COIN_PACK_SKUS as readonly string[]).includes(sku);
+}
+
+/** 코인 충전팩 상품(가격·라벨) 로드 */
+export async function loadCoinProducts(): Promise<Product[]> {
+  await ensureConnection();
+  return getProducts({ skus: [...COIN_PACK_SKUS] });
+}
+
+/** 코인 충전팩 결제창 요청 (소비성). 결과는 purchaseUpdatedListener 로 전달. */
+export async function requestCoinPurchase(code: CoinPackCode): Promise<void> {
+  await ensureConnection();
+  if (Platform.OS === "android") {
+    await requestPurchase({ skus: [code] });
+    return;
+  }
+  await requestPurchase({ sku: code });
+}
+
+/** 코인 충전 거래 완료 (소비성 — isConsumable=true 라야 재구매 가능) */
+export async function completeConsumable(
+  purchase: ProductPurchase,
+): Promise<void> {
+  await finishTransaction({ purchase, isConsumable: true });
 }

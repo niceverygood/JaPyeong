@@ -105,7 +105,12 @@ export function ProfileScreen() {
 
         <View className="mt-8 gap-3">
           <Button
+            label="내 코인"
+            onPress={() => navigation.navigate("Coins")}
+          />
+          <Button
             label="구독 플랜 보기"
+            variant="ghost"
             onPress={() => navigation.navigate("Plans")}
           />
           <Button

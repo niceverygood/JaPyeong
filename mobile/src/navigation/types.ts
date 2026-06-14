@@ -6,6 +6,7 @@ export type RootStackParamList = {
   Profile: undefined;
 
   // 결제
+  Coins: undefined;
   Plans: undefined;
   Checkout: { plan: "basic" | "standard" | "premium" | "family"; provider: "toss" | "kakao" | "mock"; recurring?: boolean };
   PaymentResult: { payment_id: number; payment_key?: string; pg_token?: string };

@@ -11,6 +11,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ApiError } from "@/api/client";
 import { PaywallProvider, usePaywall } from "@/components/primitives/Paywall";
+import { navigationRef } from "@/navigation/navRef";
 import { RootNavigator } from "@/navigation/RootNavigator";
 import { useAuthStore } from "@/stores/authStore";
 import { useBirthStore } from "@/stores/birthStore";
@@ -68,7 +69,7 @@ export default function App() {
       <StatusBar style="light" />
       <PaywallProvider>
         <QueryWithPaywall>
-          <NavigationContainer theme={navTheme}>
+          <NavigationContainer theme={navTheme} ref={navigationRef}>
             <RootNavigator />
           </NavigationContainer>
         </QueryWithPaywall>

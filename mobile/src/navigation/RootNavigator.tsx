@@ -12,6 +12,7 @@ import { LandingScreen } from "@/screens/Landing/LandingScreen";
 import { NotificationsScreen } from "@/screens/Notifications/NotificationsScreen";
 import { OnboardingScreen } from "@/screens/Onboarding/OnboardingScreen";
 import { TimingScreen } from "@/screens/Timing/TimingScreen";
+import { CoinWalletScreen } from "@/screens/Coins/CoinWalletScreen";
 import { CheckoutScreen } from "@/screens/Payment/CheckoutScreen";
 import { PaymentResultScreen } from "@/screens/Payment/PaymentResultScreen";
 import { PlansScreen } from "@/screens/Payment/PlansScreen";
@@ -102,6 +103,11 @@ export function RootNavigator() {
       />
 
       {/* 결제 그룹 */}
+      <Stack.Screen
+        name="Coins"
+        component={CoinWalletScreen}
+        options={{ title: "내 코인" }}
+      />
       <Stack.Screen
         name="Plans"
         component={PlansScreen}

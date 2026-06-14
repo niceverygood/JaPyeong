@@ -18,7 +18,9 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { Linking, Modal, Pressable, Text, View } from "react-native";
+import { Modal, Pressable, Text, View } from "react-native";
+
+import { navigate } from "@/navigation/navRef";
 
 import { Button } from "./Button";
 
@@ -104,60 +106,38 @@ function PaywallModal({ open, onClose, retryAfterSec }: ModalProps) {
               : "내일 다시 이용 가능합니다."}
           </Text>
 
-          {/* 구독 안내 — 디스클레이머 + 결제 유도 */}
+          {/* 선택지 안내 — 코인 단건 vs 구독 */}
           <View className="mt-5 rounded-lg border border-line bg-bg-card p-4">
             <Text className="mb-2 font-serif text-sm text-gold-light">
-              더 깊은 풀이를 원하시면
+              지금 더 보려면
             </Text>
-            <View className="gap-2">
-              <View className="flex-row justify-between">
-                <Text className="font-sans text-sm text-ink">
-                  Basic · 일 20회
-                </Text>
-                <Text className="font-serif text-sm text-text">
-                  연 49,000원
-                </Text>
-              </View>
-              <View className="flex-row justify-between">
-                <Text className="font-sans text-sm text-ink">
-                  Standard · 일 100회 + 결정 도우미
-                </Text>
-                <Text className="font-serif text-sm text-text">
-                  연 149,000원
-                </Text>
-              </View>
-            </View>
+            <Text className="font-sans text-sm leading-6 text-ink">
+              · 코인 단건 — 필요한 풀이만 골라 결제 (정밀풀이 2,900~)
+              {"\n"}· 구독 — 매일 더 많은 자문 + 프리미엄 심층(opus) 모델
+            </Text>
             <Text className="mt-3 font-sans text-xs text-ink-muted">
               자동 갱신은 디폴트 OFF · 결제 후 7일 이내 100% 환불
             </Text>
           </View>
 
-          {/* CTA — 결제 페이지 (웹 URL 또는 인앱 결제 — Sprint 1-2 후 활성) */}
+          {/* CTA — 코인 충전 / 구독 (인앱) */}
           <View className="mt-4 gap-2">
             <Button
-              label="요금제 자세히 보기"
+              label="코인 충전하기"
               onPress={() => {
-                Linking.openURL("https://ja-pyeong.vercel.app/#pricing");
                 onClose();
+                navigate("Coins");
+              }}
+            />
+            <Button
+              label="구독 요금제 보기"
+              variant="ghost"
+              onPress={() => {
+                onClose();
+                navigate("Plans");
               }}
             />
             <Button label="나중에 보기" variant="ghost" onPress={onClose} />
-          </View>
-
-          {/* 1:1 자문 안내 — 별도 CTA */}
-          <View className="mt-4 border-t border-line pt-4">
-            <Text className="text-center font-sans text-xs text-ink-muted">
-              자문위원 1:1 (Premium/Family)은 전화 상담으로 신청합니다
-            </Text>
-            <Pressable
-              onPress={() => {
-                Linking.openURL("tel:1577-0000");
-                onClose();
-              }}
-              className="mt-2 self-center"
-            >
-              <Text className="font-serif text-sm text-gold">1577-0000</Text>
-            </Pressable>
           </View>
         </Pressable>
       </Pressable>
