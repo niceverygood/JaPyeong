@@ -80,6 +80,7 @@ def calculate_distribution(
     pillars: FourPillars,
     include_hidden: bool = True,
     weights: ElementWeights | None = None,
+    position_weights: dict[str, float] | None = None,
 ) -> FiveElementsDistribution:
     """사주 오행 분포 계산.
 
@@ -87,8 +88,12 @@ def calculate_distribution(
     - include_hidden=False: 각 지지의 正氣(본기)만 branch_primary_weight로 가산.
     - include_hidden=True: 지장간 전부(正氣/中氣/餘氣)를 각 가중치로 가산.
     - 시주(hour)가 없으면 해당 기여를 제외.
+    - position_weights: 지지(地支) 기여에 위치별 배수를 적용(예: {"month":3.0}).
+      None 이면 모든 위치 1.0(균등) — 표시용 분포는 기본값, 신강약은 월령 지배 가중을 주입.
+      천간은 위치 가중 대상이 아님(월령 지배는 月支 기준이 통설).
     """
     w = weights or ElementWeights()
+    pw = position_weights or {}
     sums: dict[Ohaeng, float] = dict.fromkeys(ELEMENT_ORDER, 0.0)
     breakdown: dict[str, list[Contribution]] = {e.value: [] for e in ELEMENT_ORDER}
 
@@ -102,6 +107,7 @@ def calculate_distribution(
             continue
         add(f"{pos}_gan", gan_ohaeng(pillar.gan), w.stem_weight)
 
+        mult = pw.get(pos, 1.0)
         hidden = get_jijanggan(pillar.ji)
         for h in hidden:
             if not include_hidden and h.stage != StageType.JEONGGI:
@@ -112,7 +118,7 @@ def calculate_distribution(
                 weight = w.branch_middle_weight
             else:
                 weight = w.branch_residual_weight
-            add(f"{pos}_ji_{_STAGE_SUFFIX[h.stage]}", gan_ohaeng(h.gan), weight)
+            add(f"{pos}_ji_{_STAGE_SUFFIX[h.stage]}", gan_ohaeng(h.gan), weight * mult)
 
     total = sum(sums.values())
     return FiveElementsDistribution(
