@@ -48,7 +48,7 @@ class StrengthResponse(BaseModel):
     deuk_ryeong: bool
     deuk_ji: bool
     notes: list[str]
-    confidence: str  # "provisional"
+    confidence: str  # high | medium | low — 판정 경계로부터 거리 기반(엔진 보정)
 
 
 class GeokgukResponse(BaseModel):

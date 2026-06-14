@@ -31,12 +31,12 @@ def test_sin_yak_yongsin_is_parent_element():
 
 
 def test_sin_gang_yongsin_hybrid():
-    # 壬(水) 신강 + 子월(한겨울 水왕) → 억부(식상 木) 또는 조후(제방 土) 모두 정당.
-    # hybrid 도입 후 한겨울 水왕은 조후 제방(土)을 우선할 수 있다.
+    # 壬(水) 신강 + 子월(한겨울 水왕, 火 결핍) → 궁통보감 통설 "壬水 子월 專用丙火".
+    # frigid 게이팅: 火가 원국에 결핍(0%)이라 조후(火)가 억부(식상 木)보다 우선.
     r = yongsin.derive_yongsin(SIN_GANG)
     assert r.based_on_strength == "신강"
-    assert r.yongsin in {Ohaeng.MOK, Ohaeng.TO}
-    assert r.method in {"eokbu", "johu", "hybrid"}
+    assert r.yongsin == Ohaeng.HWA  # 한겨울 壬水 → 조후 火(丙火 온난)
+    assert r.method == "johu"
 
 
 def test_huishin_giishin_consistency():
