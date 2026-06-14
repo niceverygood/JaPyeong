@@ -39,7 +39,8 @@ class ChargeVerifyRequest(BaseModel):
     platform: Literal["ios", "android"]
     product_id: str = Field(min_length=1, max_length=60)   # 충전팩 코드(= IAP product_id)
     receipt: str = Field(min_length=1)
-    transaction_id: str | None = Field(default=None, max_length=160)
+    # 멱등 키의 핵심 — 누락 시 같은 팩 재구매가 중복으로 묻혀 코인 미적립됨. 필수.
+    transaction_id: str = Field(min_length=1, max_length=160)
     package_name: str | None = Field(default=None, max_length=120)
 
 
@@ -65,6 +66,8 @@ class CoinSpendRequest(BaseModel):
     option_a: OptionIn | None = None
     option_b: OptionIn | None = None
     context: str | None = Field(default=None, max_length=2000)
+    # 클라이언트가 1회 액션마다 발급하는 멱등 키 — 재시도 시 중복 차감 방지.
+    idempotency_key: str | None = Field(default=None, max_length=120)
 
 
 class CoinSpendResponse(BaseModel):
@@ -199,13 +202,17 @@ async def spend(
     request: Request,
     user_id: int = Depends(get_current_user_id),
 ) -> CoinSpendResponse:
-    """단건 상품 코인 차감 후 프리미엄(opus) 콘텐츠를 생성해 반환."""
+    """단건 상품 — 프리미엄(opus) 콘텐츠를 먼저 생성한 뒤 성공 시에만 코인을 차감한다.
+
+    설계(generate-then-charge): 생성 실패는 차감 자체가 일어나지 않으므로 환불 경로가
+    필요 없다(환불-실패-무시 같은 정합성 위험 제거). 차감 전 잔액을 확인해 무료 생성도 막는다.
+    """
     await get_limiter().enforce_ip_only(request)
     item = get_spend_item(body.item_code)
     if item is None:
         raise HTTPException(400, f"알 수 없는 단건 상품: {body.item_code}")
 
-    # 0. 위기 키워드 가드 (질문/맥락) — 차감 전에 안전 우선
+    # 0. 위기 키워드 가드 (질문/맥락) — 무엇보다 먼저, 차감/생성 없이 안전 안내
     crisis_blob = " ".join(
         s for s in (body.question or "", body.context or "",
                     body.option_a.description if body.option_a else "",
@@ -221,29 +228,28 @@ async def spend(
                          "confidence": "high", "model": "(guardrail)", "flags": list(pre.flags)},
             )
 
-    # 1. 결정론 명식 (입력 오류는 차감 전에 차단)
+    # 1. 결정론 명식 + 필수 payload 검증 (생성/차감 전)
     try:
         natal = saju_service.analyze_natal(body.birth).model_dump()
     except NotImplementedError as e:
         raise HTTPException(422, str(e)) from e
     except ValueError as e:
         raise HTTPException(400, str(e)) from e
-
-    # 필수 payload 검증 (차감 전)
     if item.kind == "consult" and not (body.question and body.question.strip()):
         raise HTTPException(400, "질문(question)이 필요합니다.")
     if item.kind == "decision" and not (body.option_a and body.option_b):
         raise HTTPException(400, "두 선택지(option_a, option_b)가 필요합니다.")
 
-    # 2. 코인 차감
+    # 2. 잔액 사전 확인 — 부족하면 생성도 하지 않음(무료 생성 방지)
     try:
-        deb = await coin_service.spend(user_id, item.code, item.cost, memo=item.label)
-    except coin_service.InsufficientCoins as e:
-        raise HTTPException(402, str(e)) from e
+        if await coin_service.get_balance(user_id) < item.cost:
+            raise HTTPException(
+                402, f"코인이 부족합니다. (필요 {item.cost})",
+            )
     except coin_service.CoinDatabaseUnavailable as e:
         raise HTTPException(503, "코인 기능을 일시적으로 사용할 수 없습니다.") from e
 
-    # 3. 프리미엄 콘텐츠 생성 (실패 시 차감 환원)
+    # 3. 프리미엄 콘텐츠 생성 (실패해도 차감 없음 → 환불 불필요)
     try:
         if item.kind == "decision":
             result = consultation.consult_decision(
@@ -262,21 +268,31 @@ async def spend(
                 else _SAJU_DEEP_Q if item.kind == "saju_deep"
                 else _REPORT_Q
             )
-            result = consultation.consult(natal=natal, question=q or _SAJU_DEEP_Q, user_tier="premium")
+            result = consultation.consult(
+                natal=natal, question=q or _SAJU_DEEP_Q, user_tier="premium",
+            )
             post = guardrails.filter_answer(result.answer)
             content = _serialize(result)
             content["answer"] = _post(post.answer)
             content["flags"] = list(post.flags)
-    except Exception as e:  # noqa: BLE001 — 생성 실패 시 코인 환원 후 502
-        try:
-            await coin_service.refund(
-                user_id, item.cost, memo=f"{item.label} 생성 실패 환원",
-            )
-        except Exception:  # noqa: BLE001
-            pass
-        raise HTTPException(502, f"콘텐츠 생성에 실패해 코인을 환원했습니다: {e}") from e
+    except Exception as e:  # noqa: BLE001 — 생성 실패: 차감 전이므로 그대로 502
+        raise HTTPException(502, f"콘텐츠 생성에 실패했습니다: {e}") from e
+
+    # 4. 생성 성공 → 코인 차감 (멱등). 동시 차감 경합으로 잔액이 빠진 드문 경우엔
+    #    이미 생성된 콘텐츠를 반환하되 charged=0 으로 표기(과금 안전 우선).
+    try:
+        deb = await coin_service.spend(
+            user_id, item.code, item.cost,
+            idempotency_key=(f"spend:{user_id}:{body.idempotency_key}"
+                             if body.idempotency_key else None),
+            memo=item.label,
+        )
+        balance, charged = deb["balance"], deb["charged"]
+    except coin_service.InsufficientCoins:
+        balance, charged = await coin_service.get_balance(user_id), 0
+    except coin_service.CoinDatabaseUnavailable as e:
+        raise HTTPException(503, "코인 기능을 일시적으로 사용할 수 없습니다.") from e
 
     return CoinSpendResponse(
-        item_code=item.code, balance=deb["balance"], charged=deb["charged"],
-        content=content,
+        item_code=item.code, balance=balance, charged=charged, content=content,
     )

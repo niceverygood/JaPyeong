@@ -190,8 +190,8 @@ async def refund(
         dup = await _find_by_idem(session, idempotency_key)
         if dup is not None:
             return {"balance": w.balance, "refunded": 0, "duplicate": True}
+        # lifetime_spent 는 누적(gross) 지표 — 환불로 줄이지 않는다(원장 합과의 감사 정합성).
         w.balance += amount
-        w.lifetime_spent = max(0, w.lifetime_spent - amount)
         session.add(
             CoinTransaction(
                 wallet_id=w.id, user_id=user_id, kind=CoinTxnKind.REFUND,

@@ -598,15 +598,23 @@ async def confirm_payment(
 
 # ── 네이티브 인앱결제(IAP) 영수증 검증 ────────────────────────────
 # iOS App Store / Google Play 자체 결제. 디지털 구독은 스토어 정책상 IAP 필수.
+def _is_production() -> bool:
+    return os.environ.get("ENV", "").strip().lower() == "production"
+
+
 async def _verify_apple_receipt(receipt: str, product_id: str) -> None:
-    """App Store 영수증 검증. APPLE_IAP_SHARED_SECRET 미설정 시 dev-accept."""
+    """App Store 영수증 검증. 프로덕션에서 검증 미구성이면 fail-closed(거부)."""
     import logging
-    import os
 
     secret = os.environ.get("APPLE_IAP_SHARED_SECRET")
     if not secret:
+        # 프로덕션에서 검증 없이 수락하면 위조 영수증으로 무료 코인/구독 발급됨 → 거부.
+        if _is_production():
+            raise PaymentError(
+                "결제 검증을 완료할 수 없습니다. 잠시 후 다시 시도해주세요.",
+            )
         logging.getLogger(__name__).warning(
-            "APPLE_IAP_SHARED_SECRET 미설정 — App Store 영수증 검증 생략(dev)",
+            "APPLE_IAP_SHARED_SECRET 미설정 — App Store 영수증 검증 생략(dev only)",
         )
         return
     body = {
@@ -634,22 +642,21 @@ async def _verify_apple_receipt(receipt: str, product_id: str) -> None:
 async def _verify_google_purchase(
     purchase_token: str, product_id: str, package_name: str,
 ) -> None:
-    """Play 구매 검증. GOOGLE_PLAY_SERVICE_ACCOUNT_JSON 미설정 시 dev-accept.
+    """Play 구매 검증. 실제 검증 미구현 → 프로덕션에서는 fail-closed(거부).
 
     운영 전 TODO: 서비스계정 OAuth2 → androidpublisher
-    purchases.subscriptionsv2.get 로 구매토큰·만료·상태 검증.
+    purchases.subscriptionsv2.get / products.get 로 구매토큰·상태 검증.
+    구현 완료 전까지 프로덕션에서 수락하면 위조 토큰으로 무료 발급되므로 거부한다.
     """
     import logging
-    import os
 
-    if not os.environ.get("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"):
-        logging.getLogger(__name__).warning(
-            "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON 미설정 — Play 구매 검증 생략(dev)",
+    if _is_production():
+        raise PaymentError(
+            "안드로이드 결제 검증이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.",
         )
-        return
-    # TODO(prod): google-auth + androidpublisher 로 실제 검증 구현
+    # dev only — 검증 생략 수락
     logging.getLogger(__name__).warning(
-        "Play 구매 검증 미구현 — 서비스계정 연동 필요 (purchase_token=%s…)",
+        "Play 구매 검증 미구현 — dev only 수락 (purchase_token=%s…)",
         purchase_token[:12],
     )
 
