@@ -1,0 +1,65 @@
+{
+  "_meta": {
+    "purpose": "신강약 회귀/정확도 골든셋 — 논쟁 없는 명백한 극단 케이스(시드). 고전 출처 케이스는 별도 파일로 병합.",
+    "label_field": "expect_strength",
+    "note": "pillars 는 간지 2글자(천간+지지). hour 가 null 이면 시주 제외."
+  },
+  "cases": [
+    {
+      "id": "clear-sin-gang-mok",
+      "year": "癸亥", "month": "乙卯", "day": "甲寅", "hour": "甲子",
+      "expect_strength": "신강",
+      "rationale": "甲 일간이 卯월 득령 + 水(인성)生木·木(비겁) 가득 — 명백한 신강.",
+      "source": "구성 케이스(극단)", "confidence": "high"
+    },
+    {
+      "id": "clear-sin-gang-geum",
+      "year": "戊申", "month": "辛酉", "day": "庚戌", "hour": "庚辰",
+      "expect_strength": "신강",
+      "rationale": "庚 일간이 酉월 득령(양인) + 土(인성)生金·金(비겁) 가득 — 명백한 신강.",
+      "source": "구성 케이스(극단)", "confidence": "high"
+    },
+    {
+      "id": "clear-sin-gang-hwa",
+      "year": "甲午", "month": "甲午", "day": "丙寅", "hour": "甲午",
+      "expect_strength": "신강",
+      "rationale": "丙 일간이 午월 득령(제왕) + 木(인성)生火·火 가득 — 명백한 신강.",
+      "source": "구성 케이스(극단)", "confidence": "high"
+    },
+    {
+      "id": "clear-sin-gang-su",
+      "year": "壬子", "month": "壬子", "day": "壬申", "hour": "庚子",
+      "expect_strength": "신강",
+      "rationale": "壬 일간이 子월 득령(양인) + 金(인성)生水·水 가득 — 명백한 신강.",
+      "source": "구성 케이스(극단)", "confidence": "high"
+    },
+    {
+      "id": "clear-sin-yak-mok",
+      "year": "庚申", "month": "庚申", "day": "甲申", "hour": "庚午",
+      "expect_strength": "신약",
+      "rationale": "甲 일간이 申월 실령 + 金(관살) 가득 + 火설기 — 명백한 신약.",
+      "source": "구성 케이스(극단)", "confidence": "high"
+    },
+    {
+      "id": "clear-sin-yak-hwa",
+      "year": "壬子", "month": "壬子", "day": "丙子", "hour": "己亥",
+      "expect_strength": "신약",
+      "rationale": "丙 일간이 子월 실령 + 水(관살) 가득 — 명백한 신약.",
+      "source": "구성 케이스(극단)", "confidence": "high"
+    },
+    {
+      "id": "clear-sin-yak-su",
+      "year": "丙午", "month": "丙午", "day": "壬午", "hour": "丁未",
+      "expect_strength": "신약",
+      "rationale": "壬 일간이 午월 실령 + 火(재) 土 가득, 水 고갈 — 명백한 신약.",
+      "source": "구성 케이스(극단)", "confidence": "high"
+    },
+    {
+      "id": "borderline-junghwa-geum",
+      "year": "丁巳", "month": "丙午", "day": "辛巳", "hour": "甲午",
+      "expect_strength": "중화",
+      "rationale": "辛 일간이 午월 실령·火 관살 강하나, 巳午 지장간의 庚(겁재)·戊己(土 인성)로 통근 — 신약이 아닌 중화 경계.",
+      "source": "구성 케이스(중화 밴드)", "confidence": "high"
+    }
+  ]
+}
