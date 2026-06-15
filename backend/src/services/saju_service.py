@@ -84,6 +84,7 @@ def analyze_natal(birth: BirthInfo, policy: MyeongriPolicy | None = None) -> Nat
         ten_god=geo.ten_god.value,  # 한글 (e.g., "편관")
         based_on=geo.based_on,
         based_gan=geo.based_gan,
+        special_pattern=geo.special_pattern,
         confidence=geo.confidence,
     )
     yong = ys.derive_yongsin(pillars)

@@ -51,6 +51,15 @@ async def teaser(req: TeaserRequest, request: Request) -> dict:
     return result
 
 
+@router.get("/quota")
+async def quota(request: Request) -> dict:
+    """오늘 남은 무료 자문 횟수 조회(소비 없음) — Chat 진입 시 헤더 카운터용."""
+    limiter = get_limiter()
+    tier = await get_user_tier(resolve_user_id(request))
+    remaining, limit = await limiter.remaining_daily(request, user_tier=tier)
+    return {"daily_remaining": remaining, "daily_limit": limit, "tier": tier}
+
+
 def _post(text: str) -> str:
     """모든 LLM 응답 텍스트 필드에 적용할 후처리 파이프라인.
 
@@ -64,8 +73,10 @@ def _post(text: str) -> str:
 async def chat(req: ChatRequest, request: Request) -> ChatResponse:
     # -1. Rate limit — 티어별 일일 한도(anon 5 / basic 20 / std 100 / prem·family 500)
     # 권한은 JWT 신원 → DB 활성구독에서 결정(클레임 미신뢰). 결제 즉시 상향, 해지 즉시 강등.
+    limiter = get_limiter()
     tier = await get_user_tier(resolve_user_id(request))
-    await get_limiter().enforce(request, user_tier=tier)
+    await limiter.enforce(request, user_tier=tier)
+    daily_remaining, daily_limit = await limiter.remaining_daily(request, user_tier=tier)
     # 0. 입력 위기 키워드 검사 — 즉시 상담 안내로 단축
     pre = guardrails.check_question(req.question)
     if not pre.safe:
@@ -75,6 +86,8 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
             confidence="high",
             flags=list(pre.flags),
             model="(guardrail)",
+            daily_remaining=daily_remaining,
+            daily_limit=daily_limit,
         )
 
     # 1. 룰베이스 원국 JSON
@@ -119,4 +132,6 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
         follow_up_suggestions=[_post(s) for s in result.follow_up_suggestions],
         flags=list(post.flags),
         model=result.model,
+        daily_remaining=daily_remaining,
+        daily_limit=daily_limit,
     )

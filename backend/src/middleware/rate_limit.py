@@ -271,6 +271,24 @@ class RateLimiter:
             headers={"Retry-After": str(violation.retry_after_seconds)},
         )
 
+    async def remaining_daily(
+        self, request: Request, user_tier: str | None = None
+    ) -> tuple[int, int]:
+        """소비 없이 회원 일일 자문 잔여·한도를 조회. 반환 (remaining, limit).
+
+        카운터를 증가시키지 않고 store.get으로 현재 사용량만 읽는다(전환 UI 표시용).
+        enforce 직후 호출하면 이번 요청을 포함한 잔여를 반환한다.
+        """
+        if user_tier is None:
+            user_tier = resolve_tier(request)
+        ip = self._get_ip(request)
+        user_id = self._get_user_id(request)
+        now = int(time.time())
+        tier_limit = TIER_DAILY.get(user_tier, TIER_DAILY["anon"])
+        ident = user_id or f"anon:{ip}"
+        used = await self.store.get(f"rl:user:day:{ident}:{now // 86400}")
+        return max(0, tier_limit - used), tier_limit
+
 
 # 싱글톤 인스턴스 (모듈 로드 시 자동 셋업)
 _default_limiter: RateLimiter | None = None

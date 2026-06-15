@@ -52,10 +52,11 @@ class StrengthResponse(BaseModel):
 
 
 class GeokgukResponse(BaseModel):
-    name: str  # 정관격 / 편관격 / ...
+    name: str  # 정관격 / 편관격 / 건록격 / 양인격 ...
     ten_god: str  # 한글 이름 (비견·정관 등)
     based_on: str  # transparent / primary
     based_gan: str  # 격을 만든 천간
+    special_pattern: str | None = None  # 건록 / 양인 / None
     confidence: str
 
 

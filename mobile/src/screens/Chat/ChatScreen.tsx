@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -8,14 +10,24 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useChat, type ChatResponse } from "@/api/chat";
+import { fetchChatQuota, useChat, type ChatResponse } from "@/api/chat";
 import { useAnalyzeSaju } from "@/api/saju";
 import { MiniSajuStrip } from "@/components/domain/SajuGrid";
 import { Button } from "@/components/primitives/Button";
 import { Card } from "@/components/primitives/Card";
 import { HanjaText } from "@/components/primitives/HanjaText";
+import type { RootStackParamList } from "@/navigation/types";
 import { useBirthStore } from "@/stores/birthStore";
 import { colors } from "@/theme";
+
+type ChatNav = NativeStackNavigationProp<RootStackParamList, "Chat">;
+
+// 신뢰도를 '숨긴 약점'이 아니라 '정직한 한계'로 — 왜 그 등급인지 1줄 설명.
+const CONFIDENCE_REASON: Record<string, string> = {
+  high: "근거가 비교적 뚜렷한 판정입니다.",
+  medium: "격국·용신 등 학파에 따라 해석이 갈릴 수 있는 영역이 포함됩니다.",
+  low: "정보 부족·경계 명조로 해석에 주의가 필요합니다.",
+};
 
 interface Category {
   hanja: string;
@@ -104,10 +116,19 @@ type ActiveState =
   | { kind: "error"; category?: Category; question: string; error: string };
 
 export function ChatScreen() {
+  const navigation = useNavigation<ChatNav>();
   const birth = useBirthStore((s) => s.birth);
   const { data: sajuData } = useAnalyzeSaju(birth);
   const chat = useChat();
   const [active, setActive] = useState<ActiveState | null>(null);
+  // 오늘 남은 무료 자문 횟수 — 정직한 한도 인식 + 소진 시 코인 전환 유도.
+  const [quota, setQuota] = useState<{ remaining: number; limit: number } | null>(null);
+
+  useEffect(() => {
+    fetchChatQuota()
+      .then((q) => setQuota({ remaining: q.daily_remaining, limit: q.daily_limit }))
+      .catch(() => {});
+  }, []);
 
   if (!birth) {
     return (
@@ -124,8 +145,15 @@ export function ChatScreen() {
     chat.mutate(
       { birth, question: q },
       {
-        onSuccess: (response) =>
-          setActive({ kind: "done", category, question: q, response }),
+        onSuccess: (response) => {
+          setActive({ kind: "done", category, question: q, response });
+          if (response.daily_remaining != null && response.daily_limit != null) {
+            setQuota({
+              remaining: response.daily_remaining,
+              limit: response.daily_limit,
+            });
+          }
+        },
         onError: (e: unknown) =>
           setActive({
             kind: "error",
@@ -152,6 +180,15 @@ export function ChatScreen() {
                 <Text className="mt-1 font-sans text-xs text-ink-muted">
                   원국을 고정한 상태로 질문합니다.
                 </Text>
+                {quota ? (
+                  <Text
+                    className={`mt-1 font-sans text-xs ${
+                      quota.remaining > 0 ? "text-gold" : "text-accent-clay"
+                    }`}
+                  >
+                    오늘 무료 자문 {quota.remaining}/{quota.limit}회 남음 · 매일 00:00 초기화
+                  </Text>
+                ) : null}
               </View>
               <View className="rounded-md border border-lineStrong bg-bg-raised px-2.5 py-1">
                 <Text className="font-sans text-[11px] text-gold">근거 포함</Text>
@@ -165,6 +202,20 @@ export function ChatScreen() {
               </Text>
             )}
           </Card>
+
+          {quota && quota.remaining <= 0 ? (
+            <Pressable
+              onPress={() => navigation.navigate("Coins")}
+              className="rounded-lg border border-gold bg-bg-card p-4 active:opacity-90"
+            >
+              <Text className="font-serif text-base text-gold-light">
+                오늘 무료 자문을 모두 사용했어요
+              </Text>
+              <Text className="mt-1 font-sans text-sm text-ink-secondary">
+                코인으로 심층 정밀 풀이를 이어보세요. 무료 한도는 내일 00:00 초기화됩니다.
+              </Text>
+            </Pressable>
+          ) : null}
 
           {!active && (
             <Text className="font-sans text-sm leading-6 text-ink-secondary">
@@ -248,6 +299,13 @@ export function ChatScreen() {
                   </View>
                 )}
               </View>
+
+              {active.kind === "done" &&
+              CONFIDENCE_REASON[active.response.confidence] ? (
+                <Text className="mb-1 font-sans text-[11px] leading-4 text-ink-muted">
+                  {CONFIDENCE_REASON[active.response.confidence]}
+                </Text>
+              ) : null}
 
               {active.kind === "loading" && (
                 <View className="flex-row items-center gap-2 py-2">

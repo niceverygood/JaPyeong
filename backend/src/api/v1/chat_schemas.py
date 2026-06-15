@@ -29,3 +29,5 @@ class ChatResponse(BaseModel):
     follow_up_suggestions: list[str] = []
     flags: list[str] = []  # 가드레일 플래그
     model: str
+    daily_remaining: int | None = None  # 오늘 남은 무료 자문 횟수(전환 UI)
+    daily_limit: int | None = None  # 티어별 일일 한도

@@ -2,7 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 
-import { post } from "./client";
+import { get, post } from "./client";
 import type { BirthInput } from "./types";
 
 export interface Citation {
@@ -24,6 +24,8 @@ export interface ChatResponse {
   follow_up_suggestions: string[];
   flags: string[];
   model: string;
+  daily_remaining?: number | null; // 오늘 남은 무료 자문 횟수
+  daily_limit?: number | null; // 티어별 일일 한도
 }
 
 export interface ChatRequest {
@@ -39,6 +41,17 @@ export function useChat() {
   return useMutation({
     mutationFn: sendChat,
   });
+}
+
+// ── 무료 자문 잔여 횟수(소비 없이 조회) — Chat 진입 헤더 카운터 ──
+export interface ChatQuota {
+  daily_remaining: number;
+  daily_limit: number;
+  tier: string;
+}
+
+export function fetchChatQuota(): Promise<ChatQuota> {
+  return get<ChatQuota>("/v1/chat/quota");
 }
 
 // ── 무료 맛보기(teaser) — 결정론 '내 한 줄' (전환 퍼널) ──────────

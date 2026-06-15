@@ -57,6 +57,11 @@ export function PlansScreen() {
   const useStorePay =
     isIapSupported && selectedPlan != null && isIapPlan(selectedPlan);
 
+  // iOS는 외부 PG로 디지털 구독 판매 불가(Apple 3.1.1). IAP 미등록 플랜(premium/family)은
+  // 앱에서 결제하지 않고 '웹에서 이용' 안내만 노출한다(외부 결제 링크/버튼 없음).
+  const webOnlyOnIos =
+    Platform.OS === "ios" && selectedPlan != null && !isIapPlan(selectedPlan);
+
   // 정기결제는 카카오페이 SID 만 지원 → 켜면 결제수단을 카카오로 고정.
   const toggleRecurring = () => {
     setRecurring((prev) => {
@@ -68,6 +73,8 @@ export function PlansScreen() {
 
   const onProceed = () => {
     if (!selectedPlan) return;
+    // iOS 비-IAP 플랜은 앱 내 결제를 제공하지 않는다(웹 이용 안내만).
+    if (webOnlyOnIos) return;
     // 네이티브: 스토어 결제(IAP) — 외부결제(카카오/토스)는 앱 내 디지털 구독에 사용 불가
     if (useStorePay && isIapPlan(selectedPlan)) {
       void iap.buy(selectedPlan);
@@ -146,7 +153,7 @@ export function PlansScreen() {
         )}
 
         {/* 정기결제(자동결제) opt-in — BM v2: 디폴트 OFF. 스토어 결제(IAP)는 자동 갱신이므로 숨김 */}
-        {selectedPlan && !useStorePay && (
+        {selectedPlan && !useStorePay && !webOnlyOnIos && (
           <Pressable
             accessibilityRole="switch"
             accessibilityState={{ checked: recurring }}
@@ -177,7 +184,7 @@ export function PlansScreen() {
         )}
 
         {/* 게이트웨이 선택 (자동결제 시 카카오페이로 고정). 네이티브 스토어 결제 시 숨김 */}
-        {selectedPlan && !recurring && !useStorePay && (
+        {selectedPlan && !recurring && !useStorePay && !webOnlyOnIos && (
           <View className="mt-6">
             <Text className="mb-2 font-sans text-sm text-ink-muted">결제 수단</Text>
             <View className="flex-row gap-2">
@@ -215,19 +222,32 @@ export function PlansScreen() {
           <Text className="mt-3 font-sans text-sm text-state-warning">{iap.error}</Text>
         )}
 
+        {webOnlyOnIos && (
+          <View className="mt-6 rounded-lg border border-line bg-bg-card p-4">
+            <Text className="font-sans text-sm text-ink">
+              이 플랜은 자평 웹에서 이용하실 수 있어요.
+            </Text>
+            <Text className="mt-1 font-sans text-xs text-ink-muted">
+              앱에서는 basic·standard 구독과 코인만 결제할 수 있습니다.
+            </Text>
+          </View>
+        )}
+
         <View className="mt-8">
           <Button
             label={
               !selectedPlan
                 ? "플랜을 선택하세요"
-                : useStorePay
-                  ? iapBusy
-                    ? "처리 중…"
-                    : `${selectedPlan.toUpperCase()} 구독하기`
-                  : `${selectedPlan.toUpperCase()} ${recurring ? "정기결제 시작" : "결제하기"}`
+                : webOnlyOnIos
+                  ? "웹에서 이용 가능한 플랜"
+                  : useStorePay
+                    ? iapBusy
+                      ? "처리 중…"
+                      : `${selectedPlan.toUpperCase()} 구독하기`
+                    : `${selectedPlan.toUpperCase()} ${recurring ? "정기결제 시작" : "결제하기"}`
             }
             onPress={onProceed}
-            disabled={!selectedPlan || iapBusy}
+            disabled={!selectedPlan || iapBusy || webOnlyOnIos}
           />
         </View>
 

@@ -38,13 +38,16 @@ def test_no_tuchul_falls_back_to_primary():
 
 def test_geokguk_excludes_day_master_from_tuchul_check():
     # 일간 甲, 월주 庚寅 — 월지 寅 정기 甲(=dm, 투출 검사 제외).
-    # 중기 丙·여기 戊 모두 다른 천간(丁·庚·癸)에 없음 → fallback 정기 甲 → 비견격
+    # 중기 丙·여기 戊 모두 다른 천간(丁·庚·癸)에 없음 → fallback 정기 甲(비견).
+    # 월령 비견 = 건록격(통설명). special_pattern="건록".
     pillars = FourPillars(
         year=_p("丁", "卯"), month=_p("庚", "寅"), day=_p("甲", "子"), hour=_p("癸", "酉")
     )
     r = geokguk.determine_geokguk(pillars)
-    assert r.name == "비견격"
+    assert r.name == "건록격"
+    assert r.special_pattern == "건록"
     assert r.based_on == "primary"
+    assert r.ten_god.value == "비견"
 
 
 def test_returns_known_8_geokguk_or_bi_gyeop():

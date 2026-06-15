@@ -85,10 +85,11 @@ export interface Strength {
 }
 
 export interface Geokguk {
-  name: string; // 정관격 …
+  name: string; // 정관격 / 건록격 / 양인격 …
   ten_god: string;
   based_on: "transparent" | "primary";
   based_gan: string;
+  special_pattern?: string | null; // 건록 / 양인 / null
   confidence: string;
 }
 
