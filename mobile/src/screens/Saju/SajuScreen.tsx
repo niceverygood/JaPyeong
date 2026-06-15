@@ -159,6 +159,11 @@ export function SajuScreen() {
                 <Text className="mt-4 text-center font-sans text-sm text-ink-secondary">
                   일간 {data.day_master} · {data.day_master_element}
                 </Text>
+                {data.hour_estimated ? (
+                  <Text className="mt-2 text-center font-sans text-[11px] leading-4 text-accent-clay">
+                    시(時) 미상 — 정오 기준 추정. 시주·시간 십성 해석과 강약 신뢰도가 낮아집니다.
+                  </Text>
+                ) : null}
               </Card>
 
               <Card>

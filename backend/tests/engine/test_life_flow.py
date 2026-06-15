@@ -72,10 +72,10 @@ def test_neutral_period() -> None:
 
 def test_score_clamped_to_5() -> None:
     """가산이 +5 이상이어도 +5로 클램프."""
-    # 용신=水, 대운 壬子. 일지 = 丑이면 子丑 육합 +0.5
-    # 천간 +2 + 지지 +2 + 합 +0.5 = +4.5 (클램프 무관)
+    # 용신=水, 대운 壬子. 일지 = 丑이면 子丑 육합 +0.25(합화 미검증 약화)
+    # 천간 +2 + 지지 +2 + 합 +0.25 = +4.25 (클램프 무관)
     pt = lf.score_period(period("壬", "子"), pillars(d_ji="丑"), yongsin(y=Ohaeng.SU))
-    assert pt.score == 4.5
+    assert pt.score == 4.25
 
 
 def test_chung_penalty() -> None:
@@ -87,11 +87,11 @@ def test_chung_penalty() -> None:
 
 
 def test_yukhap_bonus() -> None:
-    """대운 지지가 일지와 육합이면 +0.5."""
+    """대운 지지가 일지와 육합이면 +0.25(합화 성립 미검증이라 보수적 약화)."""
     # 일지 子 → 子丑 육합. 대운 ji=丑
     pt = lf.score_period(period("甲", "丑"), pillars(d_ji="子"), yongsin())
-    # 甲(木)=neutral, 丑(土)=기신(-2). 일지 子 ↔ 丑 육합 +0.5 = -1.5
-    assert pt.score == -1.5
+    # 甲(木)=neutral, 丑(土)=기신(-2). 일지 子 ↔ 丑 육합 +0.25 = -1.75
+    assert pt.score == -1.75
 
 
 def test_label_thresholds() -> None:

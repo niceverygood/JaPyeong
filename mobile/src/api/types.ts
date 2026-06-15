@@ -128,6 +128,7 @@ export interface NatalResponse {
   geokguk: Geokguk;
   yongsin: Yongsin;
   life_flow: LifeFlowPoint[];
+  hour_estimated?: boolean; // 출생시 미상 → 정오 추정. 시주 해석 신뢰도 하향.
 }
 
 export interface LuckResponse {

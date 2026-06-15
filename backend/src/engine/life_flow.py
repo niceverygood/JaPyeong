@@ -106,8 +106,11 @@ def _ji_hap_chung_score(
         ]
     ]
     if pair in yukhap_pairs:
-        score += 0.5
-        reasons.append(f"일지({natal_day_ji})와 육합")
+        # 육합의 길흉은 '합화(合化) 성립' 여부에 달렸으나 그 판정은 유파 차가 크다.
+        # 합화 미판정 상태의 과한 가산은 80년치 대운에 false precision을 누적시키므로
+        # 보수적으로 약화(+0.25)하고 '잠정' caveat을 남긴다.
+        score += 0.25
+        reasons.append(f"일지({natal_day_ji})와 육합(합화 성립 미검증·잠정)")
     return score, reasons
 
 

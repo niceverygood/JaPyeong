@@ -99,6 +99,7 @@ class NatalResponse(BaseModel):
     geokguk: GeokgukResponse
     yongsin: YongsinResponse
     life_flow: list[LifeFlowPointResponse] = []  # 80년치 대운 길흉 그래프 (잠정)
+    hour_estimated: bool = False  # 출생시(時) 미상 → 정오 기준 추정. 시주 해석 신뢰도 하향.
 
 
 class LuckResponse(BaseModel):

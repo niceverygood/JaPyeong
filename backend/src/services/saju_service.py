@@ -64,6 +64,10 @@ def analyze_natal(birth: BirthInfo, policy: MyeongriPolicy | None = None) -> Nat
         periods=periods,
     )
 
+    # 출생시 미상 여부를 UI 표면화용 플래그로 전달(시주 pillar는 None으로 정확히 비워짐).
+    # 강약 신뢰도 하향·note는 assess_strength가 hour=None을 보고 이미 처리하므로 중복 적용 금지.
+    hour_estimated = birth.hour is None
+
     # ⚠ 잠정(provisional) — 자문위원 정책 7·8 미확정.
     strength = st.assess_strength(pillars)
     strength_dto = StrengthResponse(
@@ -125,6 +129,7 @@ def analyze_natal(birth: BirthInfo, policy: MyeongriPolicy | None = None) -> Nat
         geokguk=geokguk_dto,
         yongsin=yongsin_dto,
         life_flow=flow_dto,
+        hour_estimated=hour_estimated,
     )
 
 
