@@ -5,8 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useMemo } from "react";
-import { Platform, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Platform, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ApiError } from "@/api/client";
@@ -35,6 +35,7 @@ const navTheme = {
 };
 
 export default function App() {
+  const [bootTimedOut, setBootTimedOut] = useState(false);
   // 네이티브에서만 Pretendard 번들 로드 — 웹은 global.css 의 CDN
   const [fontsLoaded, fontError] = useFonts(
     Platform.OS === "web"
@@ -54,14 +55,53 @@ export default function App() {
     void hydrate();
   }, [hydrate]);
 
+  // Keychain/font hydration must never leave a new install on an empty screen.
+  // If an OS service stalls, continue with the safe signed-out defaults; the
+  // stores can still finish hydrating and update the UI afterwards.
   useEffect(() => {
-    if ((fontsLoaded || fontError) && authReady && birthHydrated) {
+    const timeout = setTimeout(() => setBootTimedOut(true), 8_000);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    if (
+      ((fontsLoaded || fontError) && authReady && birthHydrated) ||
+      bootTimedOut
+    ) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, fontError, authReady, birthHydrated]);
+  }, [fontsLoaded, fontError, authReady, birthHydrated, bootTimedOut]);
 
-  if ((!fontsLoaded && !fontError) || !authReady || !birthHydrated) {
-    return <View style={{ flex: 1, backgroundColor: colors.bg.base }} />;
+  if (
+    ((!fontsLoaded && !fontError) || !authReady || !birthHydrated) &&
+    !bootTimedOut
+  ) {
+    return (
+      <View
+        accessibilityLabel="앱을 준비하는 중"
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 16,
+          backgroundColor: colors.bg.base,
+        }}
+      >
+        <Text
+          style={{
+            color: colors.gold.primary,
+            fontSize: 28,
+            fontWeight: "800",
+          }}
+        >
+          자평
+        </Text>
+        <ActivityIndicator color={colors.gold.primary} />
+        <Text style={{ color: colors.text.secondary, fontSize: 14 }}>
+          앱을 준비하고 있어요
+        </Text>
+      </View>
+    );
   }
 
   return (
@@ -96,5 +136,7 @@ function QueryWithPaywall({ children }: { children: React.ReactNode }) {
       }),
     [showPaywall],
   );
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
 }
